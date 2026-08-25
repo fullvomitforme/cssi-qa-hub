@@ -20,16 +20,19 @@ The platform enforces role-based access at every layer (UI, server, database RLS
 ## Core Workflow
 
 ### ADMIN
+
 → Provisions QA members via invitation
 → Manages reference data (applications, modules, features, environments, releases)
 
 ### QA_LEAD
+
 → Creates and edits test scenarios
 → Builds test plans (selects scenarios + assigns testers)
 → Creates test runs from plans
 → Reviews and approves reports
 
 ### QA_TESTER
+
 → Executes assigned scenarios in a run
 → Records step results (PASS/FAIL/SKIPPED)
 → Sets execution outcome (PASS/FAIL/BLOCKED/SKIPPED)
@@ -37,15 +40,18 @@ The platform enforces role-based access at every layer (UI, server, database RLS
 → Creates findings (failures) and feedback
 
 ### Retest
+
 → Immutable execution attempts preserve every retest
 → Boards update live counters from execution data
 
 ### Report → Approvals → PDF
+
 → Report created with immutable snapshot
 → PREPARED_BY → REVIEWED_BY → APPROVED_BY workflow
 → Private PDF stored in Supabase Storage with SHA-256 checksum
 
 ### Overview
+
 → Metrics, distribution charts, trend lines, recent runs, top failures
 → Filterable by release, environment, and date range
 
