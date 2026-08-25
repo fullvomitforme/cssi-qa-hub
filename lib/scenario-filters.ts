@@ -13,11 +13,17 @@ export type ScenarioFilterValues = {
 export function filterScenarios<T extends ScenarioSummary>(
   scenarios: readonly T[],
   filters: ScenarioFilterValues,
-  now = new Date()
+  now?: Date
 ): T[] {
   const needle = filters.search?.trim().toLocaleLowerCase()
+  const referenceTime =
+    now?.getTime() ??
+    Math.max(
+      0,
+      ...scenarios.map((scenario) => new Date(scenario.updatedAt).getTime())
+    )
   const cutoff = filters.updated
-    ? now.getTime() - Number.parseInt(filters.updated, 10) * 86_400_000
+    ? referenceTime - Number.parseInt(filters.updated, 10) * 86_400_000
     : null
 
   return scenarios.filter((scenario) => {

@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { failureItems } from "@/lib/data/product-seed"
+import { failureItems, getTestRunDetail } from "@/lib/data/product-seed"
 
 type Failure = (typeof failureItems)[number]
 
@@ -47,6 +47,22 @@ export function FailureList() {
       (retest === "ALL" || failure.retestStatus === retest)
     )
   })
+  const selectedRun = selected ? getTestRunDetail(selected.runId) : undefined
+  const selectedExecution = selectedRun?.executions.find(
+    (execution) => execution.id === selected?.executionId
+  )
+  const selectedAttempts = selectedExecution?.attempts?.length
+    ? [...selectedExecution.attempts].reverse()
+    : selected
+      ? [
+          {
+            number: 1,
+            status: "FAIL" as const,
+            build: selectedRun?.build ?? "Unknown",
+            testedAt: selected.foundAt,
+          },
+        ]
+      : []
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
@@ -246,20 +262,17 @@ export function FailureList() {
                     Attempt history
                   </h3>
                   <ol className="mt-3 space-y-4 border-l pl-4">
-                    <li>
-                      <p className="text-sm font-medium">
-                        Attempt 2 · {selected.retestStatus.replaceAll("_", " ")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Build 8fb13aa · Aug 26, 09:42
-                      </p>
-                    </li>
-                    <li>
-                      <p className="text-sm font-medium">Attempt 1 · Failed</p>
-                      <p className="text-xs text-muted-foreground">
-                        Build 8fa2c91 · {selected.foundAt}
-                      </p>
-                    </li>
+                    {selectedAttempts.map((attempt) => (
+                      <li key={`${attempt.number}-${attempt.testedAt}`}>
+                        <p className="text-sm font-medium">
+                          Attempt {attempt.number} ·{" "}
+                          {attempt.status.replaceAll("_", " ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Build {attempt.build} · {attempt.testedAt}
+                        </p>
+                      </li>
+                    ))}
                   </ol>
                 </section>
                 <Button

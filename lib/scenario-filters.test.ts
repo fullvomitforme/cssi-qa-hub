@@ -24,4 +24,8 @@ describe("filterScenarios", () => {
 
     expect(result).toHaveLength(3)
   })
+
+  it("uses the latest mock update as its default reference date", () => {
+    expect(filterScenarios(scenarioSeed, { updated: "3d" })).toHaveLength(4)
+  })
 })

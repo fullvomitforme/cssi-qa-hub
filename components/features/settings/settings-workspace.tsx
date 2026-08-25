@@ -26,34 +26,37 @@ export function SettingsWorkspace() {
   const [workspaceName, setWorkspaceName] = useState("QA Hub")
   const [release, setRelease] = useState("v1.9.0")
   const [environment, setEnvironment] = useState("UAT")
-  const [requireFailureDetails, setRequireFailureDetails] = useState(true)
-  const [showCoverage, setShowCoverage] = useState(true)
   const [saved, setSaved] = useState(false)
 
   return (
     <div className="grid min-h-[calc(100vh-9rem)] md:grid-cols-[220px_minmax(0,1fr)]">
       <nav className="border-r p-2" aria-label="Settings sections">
-        {sections.map((section) => (
-          <button
-            type="button"
-            key={section.label}
-            disabled={!section.available}
-            title={
-              section.available
-                ? undefined
-                : "Available after backend integration"
-            }
-            className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm enabled:bg-accent enabled:font-medium disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            <section.icon className="size-4 text-muted-foreground" />
-            {section.label}
-            {!section.available && (
+        {sections.map((section) =>
+          section.available ? (
+            <div
+              key={section.label}
+              aria-current="page"
+              className="flex h-9 w-full items-center gap-2 rounded-md bg-accent px-2 text-sm font-medium"
+            >
+              <section.icon className="size-4 text-muted-foreground" />
+              {section.label}
+            </div>
+          ) : (
+            <button
+              type="button"
+              key={section.label}
+              disabled
+              title="Available after backend integration"
+              className="flex h-9 w-full cursor-not-allowed items-center gap-2 rounded-md px-2 text-sm opacity-55"
+            >
+              <section.icon className="size-4 text-muted-foreground" />
+              {section.label}
               <span className="ml-auto text-[10px] text-muted-foreground">
                 Later
               </span>
-            )}
-          </button>
-        ))}
+            </button>
+          )
+        )}
       </nav>
       <section className="max-w-3xl p-6">
         <div className="flex items-center justify-between">
@@ -100,49 +103,38 @@ export function SettingsWorkspace() {
               />
             </label>
           </div>
-          <label className="flex max-w-xl items-start gap-3 rounded-lg border p-3">
-            <input
-              type="checkbox"
-              checked={requireFailureDetails}
-              onChange={(event) =>
-                setRequireFailureDetails(event.target.checked)
-              }
-              className="mt-1"
-            />
+          <div className="flex max-w-xl items-start gap-3 rounded-lg border p-3 opacity-65">
+            <input type="checkbox" checked readOnly disabled className="mt-1" />
             <span>
               <span className="block text-sm font-medium">
                 Require failure details
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Actual result, reason, and severity are required when marking an
-                execution failed.
+                Enabled for demo execution. Policy configuration is coming with
+                backend integration.
               </span>
             </span>
-          </label>
-          <label className="flex max-w-xl items-start gap-3 rounded-lg border p-3">
-            <input
-              type="checkbox"
-              checked={showCoverage}
-              onChange={(event) => setShowCoverage(event.target.checked)}
-              className="mt-1"
-            />
+          </div>
+          <div className="flex max-w-xl items-start gap-3 rounded-lg border p-3 opacity-65">
+            <input type="checkbox" checked readOnly disabled className="mt-1" />
             <span>
               <span className="block text-sm font-medium">
                 Show coverage separately
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Never combine execution coverage and pass rate into one health
-                score.
+                Fixed in demo mode. Workspace policy configuration is coming
+                later.
               </span>
             </span>
-          </label>
+          </div>
           <div className="flex items-center gap-3">
             <Button type="submit" size="sm">
               Save locally
             </Button>
             {saved && (
               <span className="text-xs text-emerald-600">
-                Saved for this session.
+                Draft retained while this page is open; defaults are not applied
+                globally.
               </span>
             )}
           </div>

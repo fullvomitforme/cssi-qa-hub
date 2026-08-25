@@ -16,6 +16,7 @@ export function ReportPreview({ report }: { report: MockReportDetail }) {
   const coverage = report.summary.total
     ? ((report.summary.executed / report.summary.total) * 100).toFixed(2)
     : "0.00"
+  const hasFailures = report.summary.failed > 0
   return (
     <article className="report-paper mx-auto w-full max-w-5xl border bg-background text-foreground">
       <header className="flex items-start justify-between gap-8 border-b-2 border-foreground p-8">
@@ -158,9 +159,13 @@ export function ReportPreview({ report }: { report: MockReportDetail }) {
         </div>
       </section>
       <section className="border-b p-8">
-        <h2 className="text-base font-semibold">Failed Scenario Detail</h2>
+        <h2 className="text-base font-semibold">
+          {hasFailures ? "Failed Scenario Detail" : "Execution Note"}
+        </h2>
         <div className="mt-4 border">
-          <div className="flex items-center justify-between border-b bg-destructive/5 px-4 py-3">
+          <div
+            className={`flex items-center justify-between border-b px-4 py-3 ${hasFailures ? "bg-destructive/5" : "bg-muted/30"}`}
+          >
             <div>
               <p className="font-medium">{report.primaryFailure.scenario}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -168,8 +173,8 @@ export function ReportPreview({ report }: { report: MockReportDetail }) {
                 {report.primaryFailure.bugReference}
               </p>
             </div>
-            <Badge variant="destructive">
-              {report.primaryFailure.severity}
+            <Badge variant={hasFailures ? "destructive" : "success"}>
+              {hasFailures ? report.primaryFailure.severity : "ACCEPTED"}
             </Badge>
           </div>
           <dl className="grid gap-4 p-4 text-sm md:grid-cols-2">
@@ -189,7 +194,7 @@ export function ReportPreview({ report }: { report: MockReportDetail }) {
             </div>
             <div>
               <dt className="text-xs font-semibold text-muted-foreground">
-                Failure Reason
+                {hasFailures ? "Failure Reason" : "Observation"}
               </dt>
               <dd className="mt-1 leading-5">{report.primaryFailure.reason}</dd>
             </div>
@@ -223,15 +228,23 @@ export function ReportPreview({ report }: { report: MockReportDetail }) {
                     <p className="text-xs font-semibold">
                       {report.application} QA Evidence
                     </p>
-                    <p className="mt-2 text-xs text-destructive">
-                      Session revoked
+                    <p
+                      className={`mt-2 text-xs ${hasFailures ? "text-destructive" : "text-success-text"}`}
+                    >
+                      {hasFailures
+                        ? "Observed failure"
+                        : "Expected result confirmed"}
                     </p>
                   </div>
                 </div>
               </div>
               <div className="flex aspect-video flex-col items-center justify-center rounded-md border bg-muted/30 text-muted-foreground">
                 <FileImageIcon className="size-7" />
-                <p className="mt-2 text-xs">network-session-log.png</p>
+                <p className="mt-2 text-xs">
+                  {hasFailures
+                    ? "network-session-log.png"
+                    : "acceptance-evidence.png"}
+                </p>
               </div>
             </div>
           </div>

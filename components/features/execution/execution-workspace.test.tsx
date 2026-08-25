@@ -16,6 +16,9 @@ describe("ExecutionWorkspace", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "actual result, failure reason, severity"
     )
+    expect(
+      screen.getByText("No execution attempts recorded yet.")
+    ).toBeInTheDocument()
 
     fireEvent.change(
       screen.getByPlaceholderText("Describe what actually happened…"),
@@ -34,5 +37,11 @@ describe("ExecutionWorkspace", () => {
     })
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Fail" }))
+    expect(screen.getByText("Attempt 1")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Fail" }))
+    expect(screen.getAllByText("Attempt 1")).toHaveLength(1)
   })
 })

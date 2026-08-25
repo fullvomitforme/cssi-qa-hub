@@ -1,3 +1,5 @@
+import { calculateExecutionMetrics } from "@/lib/execution-metrics"
+
 export const boardStatuses = [
   "BACKLOG",
   "READY_TO_TEST",
@@ -362,7 +364,7 @@ export const testPlans = [
   },
 ] as const
 
-export const testRuns = [
+const testRunSeeds = [
   {
     id: "run-portal-regression",
     name: "Portal Regression — v1.9.0",
@@ -371,8 +373,6 @@ export const testRuns = [
     build: "8fa2c91",
     environment: "UAT",
     tester: "Andi Pratama",
-    progress: 75,
-    passRate: 66.7,
     status: "IN_PROGRESS",
     started: "Aug 24, 2026",
   },
@@ -384,8 +384,6 @@ export const testRuns = [
     build: "a829d41",
     environment: "UAT",
     tester: "Siti Aisyah",
-    progress: 80,
-    passRate: 50,
     status: "IN_PROGRESS",
     started: "Aug 24, 2026",
   },
@@ -397,8 +395,6 @@ export const testRuns = [
     build: "a829d41",
     environment: "UAT",
     tester: "Budi Santoso",
-    progress: 80,
-    passRate: 50,
     status: "BLOCKED",
     started: "Aug 23, 2026",
   },
@@ -410,8 +406,6 @@ export const testRuns = [
     build: "a829d41",
     environment: "STAGING",
     tester: "Andi Pratama",
-    progress: 100,
-    passRate: 97.5,
     status: "COMPLETED",
     started: "Aug 22, 2026",
   },
@@ -423,8 +417,6 @@ export const testRuns = [
     build: "8fa2c91",
     environment: "UAT",
     tester: "Budi Santoso",
-    progress: 80,
-    passRate: 100,
     status: "IN_PROGRESS",
     started: "Aug 25, 2026",
   },
@@ -433,7 +425,7 @@ export const testRuns = [
 export const failureItems = [
   {
     id: "f1",
-    scenario: "Setup New Password — Validation",
+    scenario: "Locked account cannot sign in",
     application: "Portal",
     feature: "Authentication",
     severity: "HIGH",
@@ -475,7 +467,7 @@ export const failureItems = [
   },
   {
     id: "f4",
-    scenario: "Role permission cache refresh",
+    scenario: "Edit an employee role",
     application: "Portal",
     feature: "RBAC",
     severity: "CRITICAL",
@@ -489,7 +481,7 @@ export const failureItems = [
   },
   {
     id: "f5",
-    scenario: "Task rejection comment required",
+    scenario: "Require a rejection comment",
     application: "Daily Operation",
     feature: "Approval",
     severity: "MEDIUM",
@@ -1007,13 +999,27 @@ export const portalExecutions: MockExecution[] = [
     ],
     expectedResult:
       "New navigation permissions apply immediately after sign-in.",
-    actualResult: "",
-    status: "NOT_TESTED",
+    actualResult: "New permissions applied immediately after sign-in.",
+    status: "PASS",
     severity: null,
-    failureReason: "",
-    bugReference: "",
+    failureReason: "Permission cache was stale before the fix.",
+    bugReference: "PORTAL-491",
     tester: "Andi Pratama",
-    testedAt: null,
+    testedAt: "Aug 26, 2026 09:42",
+    attempts: [
+      {
+        number: 1,
+        status: "FAIL",
+        build: "8fa2c91",
+        testedAt: "Aug 25, 2026 10:18",
+      },
+      {
+        number: 2,
+        status: "PASS",
+        build: "8fb13aa",
+        testedAt: "Aug 26, 2026 09:42",
+      },
+    ],
   },
   {
     id: "e8",
@@ -1323,11 +1329,21 @@ const dailyExecutions: MockExecution[] = [
     preconditions: "A task is awaiting approval.",
     steps: ["Select Reject", "Leave comment empty", "Confirm"],
     expectedResult: "A rejection comment is required.",
-    actualResult: "Validation appeared beside the comment field.",
-    status: "PASS",
-    severity: null,
+    actualResult: "The task was rejected without a comment.",
+    status: "FAIL",
+    severity: "MEDIUM",
+    failureReason: "The rejection endpoint does not validate the comment.",
+    bugReference: "DOPS-144",
     tester: "Budi Santoso",
-    testedAt: "Aug 25, 2026 10:18",
+    testedAt: "Aug 24, 2026 15:02",
+    attempts: [
+      {
+        number: 1,
+        status: "FAIL",
+        build: "8fa2c91",
+        testedAt: "Aug 24, 2026 15:02",
+      },
+    ],
   }),
   mockExecution({
     id: "daily-e4",
@@ -1357,15 +1373,15 @@ const dailyExecutions: MockExecution[] = [
   }),
 ]
 
-export type MockRunDetail = (typeof testRuns)[number] & {
+export type MockRunDetail = (typeof testRunSeeds)[number] & {
+  progress: number
+  passRate: number
   endDate: string
   executions: MockExecution[]
 }
 
-export const testRunDetails: MockRunDetail[] = testRuns.map((run) => ({
-  ...run,
-  endDate: run.id === "run-daily-regression" ? "Aug 27, 2026" : "Aug 26, 2026",
-  executions:
+export const testRunDetails: MockRunDetail[] = testRunSeeds.map((run) => {
+  const executions =
     run.id === "run-portal-regression"
       ? portalExecutions
       : run.id === "run-crm-regression"
@@ -1374,7 +1390,31 @@ export const testRunDetails: MockRunDetail[] = testRuns.map((run) => ({
           ? flowraExecutions
           : run.id === "run-itqm-smoke"
             ? itqmExecutions
-            : dailyExecutions,
+            : dailyExecutions
+  const metrics = calculateExecutionMetrics(executions)
+
+  return {
+    ...run,
+    progress: metrics.coverage,
+    passRate: metrics.passRate,
+    endDate:
+      run.id === "run-daily-regression" ? "Aug 27, 2026" : "Aug 26, 2026",
+    executions,
+  }
+})
+
+export const testRuns = testRunDetails.map((run) => ({
+  id: run.id,
+  name: run.name,
+  application: run.application,
+  release: run.release,
+  build: run.build,
+  environment: run.environment,
+  tester: run.tester,
+  progress: run.progress,
+  passRate: run.passRate,
+  status: run.status,
+  started: run.started,
 }))
 
 const runAliases: Record<string, string> = {

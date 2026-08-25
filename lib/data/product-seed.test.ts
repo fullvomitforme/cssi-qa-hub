@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { getReportDetail, getTestRunDetail } from "@/lib/data/product-seed"
+import {
+  failureItems,
+  getReportDetail,
+  getTestRunDetail,
+  testRuns,
+} from "@/lib/data/product-seed"
+import { calculateExecutionMetrics } from "@/lib/execution-metrics"
 
 describe("getTestRunDetail", () => {
   it("selects the matching mock run and its own executions", () => {
@@ -15,6 +21,25 @@ describe("getTestRunDetail", () => {
 
   it("returns undefined for an unknown run", () => {
     expect(getTestRunDetail("run-does-not-exist")).toBeUndefined()
+  })
+
+  it("uses execution data for list metrics", () => {
+    for (const run of testRuns) {
+      const detail = getTestRunDetail(run.id)
+      expect(detail).toBeDefined()
+      const metrics = calculateExecutionMetrics(detail!.executions)
+      expect(run.progress).toBe(metrics.coverage)
+      expect(run.passRate).toBe(metrics.passRate)
+    }
+  })
+
+  it("maps every finding to an execution with the same bug reference", () => {
+    for (const failure of failureItems) {
+      const execution = getTestRunDetail(failure.runId)?.executions.find(
+        (item) => item.id === failure.executionId
+      )
+      expect(execution?.bugReference).toBe(failure.bugReference)
+    }
   })
 })
 

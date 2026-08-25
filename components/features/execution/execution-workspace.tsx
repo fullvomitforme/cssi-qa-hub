@@ -96,6 +96,7 @@ export function ExecutionWorkspace({
   const [statusFilter, setStatusFilter] = useState<ExecutionStatus | "ALL">(
     "ALL"
   )
+  const [pendingFailureId, setPendingFailureId] = useState<string | null>(null)
   const [collapsedModules, setCollapsedModules] = useState<string[]>([])
   const [stepResults, setStepResults] = useState<Record<string, boolean[]>>(
     () =>
@@ -160,32 +161,52 @@ export function ExecutionWorkspace({
 
   const selectedEvidence = evidence[selected.id] ?? []
   const selectedSteps = stepResults[selected.id] ?? []
-  const failureMissing =
-    selected.status === "FAIL"
-      ? [
-          !selected.actualResult.trim() ? "actual result" : null,
-          !selected.failureReason.trim() ? "failure reason" : null,
-          !selected.severity ? "severity" : null,
-        ].filter(Boolean)
-      : []
+  const failureDraftActive =
+    selected.status === "FAIL" || pendingFailureId === selected.id
+  const failureMissing = failureDraftActive
+    ? [
+        !selected.actualResult.trim() ? "actual result" : null,
+        !selected.failureReason.trim() ? "failure reason" : null,
+        !selected.severity ? "severity" : null,
+      ].filter(Boolean)
+    : []
 
   function setStatus(status: ExecutionStatus) {
+    if (
+      status === "FAIL" &&
+      (!selected.actualResult.trim() ||
+        !selected.failureReason.trim() ||
+        !selected.severity)
+    ) {
+      setPendingFailureId(selected.id)
+      return
+    }
+
+    setPendingFailureId(null)
     setExecutions((current) =>
       current.map((execution) => {
         if (execution.id !== selectedId) return execution
+        if (execution.status === status) return execution
         const testedAt = status === "NOT_TESTED" ? null : "Aug 25, 2026 14:42"
-        const attempts =
-          status === "NOT_TESTED"
-            ? execution.attempts
-            : [
-                ...(execution.attempts ?? []),
-                {
-                  number: (execution.attempts?.length ?? 0) + 1,
-                  status,
-                  build: run.build,
-                  testedAt: testedAt as string,
-                },
-              ]
+        const shouldRecord =
+          status !== "NOT_TESTED" &&
+          (status !== "FAIL" ||
+            Boolean(
+              execution.actualResult.trim() &&
+              execution.failureReason.trim() &&
+              execution.severity
+            ))
+        const attempts = shouldRecord
+          ? [
+              ...(execution.attempts ?? []),
+              {
+                number: (execution.attempts?.length ?? 0) + 1,
+                status,
+                build: run.build,
+                testedAt: testedAt as string,
+              },
+            ]
+          : [...(execution.attempts ?? [])]
         return { ...execution, status, testedAt, attempts }
       })
     )
@@ -492,7 +513,7 @@ export function ExecutionWorkspace({
               ) : null}
               <label className="block text-xs font-semibold text-muted-foreground uppercase">
                 Actual result{" "}
-                {selected.status === "FAIL" ? (
+                {failureDraftActive ? (
                   <span className="text-destructive">*</span>
                 ) : null}
                 <Textarea
@@ -501,13 +522,13 @@ export function ExecutionWorkspace({
                     updateSelected({ actualResult: event.target.value })
                   }
                   aria-invalid={
-                    selected.status === "FAIL" && !selected.actualResult.trim()
+                    failureDraftActive && !selected.actualResult.trim()
                   }
                   className="mt-2 min-h-20"
                   placeholder="Describe what actually happened…"
                 />
               </label>
-              {selected.status === "FAIL" || selected.failureReason ? (
+              {failureDraftActive || selected.failureReason ? (
                 <>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase">
                     Failure reason <span className="text-destructive">*</span>
@@ -755,8 +776,11 @@ export function ExecutionWorkspace({
                   variant="outline"
                   size="sm"
                   onClick={() => setStatus(status)}
-                  aria-pressed={selected.status === status}
-                  className={`${actionStyles[status]} ${selected.status === status ? "ring-2 ring-ring" : ""}`}
+                  aria-pressed={
+                    selected.status === status ||
+                    (status === "FAIL" && pendingFailureId === selected.id)
+                  }
+                  className={`${actionStyles[status]} ${selected.status === status || (status === "FAIL" && pendingFailureId === selected.id) ? "ring-2 ring-ring" : ""}`}
                 >
                   <Icon data-icon="inline-start" />
                   {status === "SKIPPED"
