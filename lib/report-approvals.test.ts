@@ -60,7 +60,13 @@ describe("ReportMutationError", () => {
 describe("Approval sequence validation", () => {
   it("should enforce PREPARED_BY before REVIEWED_BY", () => {
     const approvals = [
-      { kind: "PREPARED_BY", approvedBy: "张三", approverRole: "QA_TESTER", approvedAt: "2024-01-15T10:00:00Z", remarks: null },
+      {
+        kind: "PREPARED_BY",
+        approvedBy: "张三",
+        approverRole: "QA_TESTER",
+        approvedAt: "2024-01-15T10:00:00Z",
+        remarks: null,
+      },
     ]
 
     const hasPrepared = approvals.some((a) => a.kind === "PREPARED_BY")
@@ -72,8 +78,20 @@ describe("Approval sequence validation", () => {
 
   it("should enforce REVIEWED_BY before APPROVED_BY", () => {
     const approvals = [
-      { kind: "PREPARED_BY", approvedBy: "张三", approverRole: "QA_TESTER", approvedAt: "2024-01-15T10:00:00Z", remarks: null },
-      { kind: "REVIEWED_BY", approvedBy: "李四", approverRole: "QA_LEAD", approvedAt: "2024-01-16T14:30:00Z", remarks: null },
+      {
+        kind: "PREPARED_BY",
+        approvedBy: "张三",
+        approverRole: "QA_TESTER",
+        approvedAt: "2024-01-15T10:00:00Z",
+        remarks: null,
+      },
+      {
+        kind: "REVIEWED_BY",
+        approvedBy: "李四",
+        approverRole: "QA_LEAD",
+        approvedAt: "2024-01-16T14:30:00Z",
+        remarks: null,
+      },
     ]
 
     const hasPrepared = approvals.some((a) => a.kind === "PREPARED_BY")
@@ -87,12 +105,30 @@ describe("Approval sequence validation", () => {
 
   it("should reject duplicate approval", () => {
     const approvals = [
-      { kind: "PREPARED_BY", approvedBy: "张三", approverRole: "QA_LEAD", approvedAt: "2024-01-15T10:00:00Z", remarks: null },
-      { kind: "REVIEWED_BY", approvedBy: "李四", approverRole: "ADMIN", approvedAt: "2024-01-16T14:30:00Z", remarks: null },
+      {
+        kind: "PREPARED_BY",
+        approvedBy: "张三",
+        approverRole: "QA_LEAD",
+        approvedAt: "2024-01-15T10:00:00Z",
+        remarks: null,
+      },
+      {
+        kind: "REVIEWED_BY",
+        approvedBy: "李四",
+        approverRole: "ADMIN",
+        approvedAt: "2024-01-16T14:30:00Z",
+        remarks: null,
+      },
     ]
 
     // Try to add duplicate REVIEWED_BY
-    const duplicateApproval = { kind: "REVIEWED_BY", approvedBy: "王五", approverRole: "ADMIN", approvedAt: "2024-01-17T09:00:00Z", remarks: null }
+    const duplicateApproval = {
+      kind: "REVIEWED_BY",
+      approvedBy: "王五",
+      approverRole: "ADMIN",
+      approvedAt: "2024-01-17T09:00:00Z",
+      remarks: null,
+    }
     const exists = approvals.some((a) => a.kind === duplicateApproval.kind)
 
     expect(exists).toBe(true)
@@ -111,8 +147,18 @@ describe("Role permission mapping", () => {
     { role: "QA_LEAD", kind: "APPROVED_BY", hasReviewed: true, allowed: false }, // Only ADMIN can approve
 
     // QA_TESTER permissions
-    { role: "QA_TESTER", kind: "REVIEWED_BY", hasPrepared: true, allowed: false },
-    { role: "QA_TESTER", kind: "APPROVED_BY", hasReviewed: true, allowed: false },
+    {
+      role: "QA_TESTER",
+      kind: "REVIEWED_BY",
+      hasPrepared: true,
+      allowed: false,
+    },
+    {
+      role: "QA_TESTER",
+      kind: "APPROVED_BY",
+      hasReviewed: true,
+      allowed: false,
+    },
   ]
 
   for (const tc of testCases) {

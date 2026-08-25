@@ -69,7 +69,9 @@ export default async function OverviewPage({
             >
               <option value="">All releases</option>
               {allReleases.map((r: string) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>
+                  {r}
+                </option>
               ))}
             </select>
           </label>
@@ -83,7 +85,9 @@ export default async function OverviewPage({
             >
               <option value="">All environments</option>
               {allEnvironments.map((e: string) => (
-                <option key={e} value={e}>{e}</option>
+                <option key={e} value={e}>
+                  {e}
+                </option>
               ))}
             </select>
           </label>
