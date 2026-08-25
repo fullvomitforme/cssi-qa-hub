@@ -10,6 +10,7 @@ import {
 } from "@/lib/data/product-seed"
 import { shouldUseDemoData } from "@/lib/env"
 import { createClient } from "@/lib/supabase/server"
+import { buildReportPdf } from "@/services/report-pdf"
 
 export class ReportMutationError extends Error {
   constructor(
@@ -235,6 +236,21 @@ export async function getReportDetailReal(
   })
 }
 
+export async function getReportPdfUrl(id: string): Promise<string | null> {
+  if (shouldUseDemoData()) return null
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("report_snapshots")
+    .select("pdf_storage_path")
+    .eq("report_id", id)
+    .maybeSingle()
+  if (!data?.pdf_storage_path) return null
+  const { data: signed } = await supabase.storage
+    .from("qa-reports")
+    .createSignedUrl(data.pdf_storage_path, 3600)
+  return signed?.signedUrl ?? null
+}
+
 export async function createAndFinalizeReport(input: {
   runId: string
   result: ReportListItem["result"]
@@ -304,8 +320,19 @@ export async function createAndFinalizeReport(input: {
     generatedAt: report.created_at,
     generatedBy: user.user.email ?? "QA Hub",
   })
-  const snapshotJson = JSON.stringify(snapshot)
-  const hash = createHash("sha256").update(snapshotJson).digest("hex")
+  const pdfBytes = buildReportPdf(snapshot)
+  const pdfPath = `reports/${report.id}/${number}.pdf`
+  const { error: pdfError } = await supabase.storage
+    .from("qa-reports")
+    .upload(pdfPath, pdfBytes, {
+      contentType: "application/pdf",
+      upsert: false,
+    })
+  if (pdfError)
+    throw new ReportMutationError(
+      `Report created, but its PDF could not be stored: ${pdfError.message}`
+    )
+  const hash = createHash("sha256").update(pdfBytes).digest("hex")
   const { error: snapshotError } = await supabase
     .from("report_snapshots")
     .insert({
@@ -314,7 +341,7 @@ export async function createAndFinalizeReport(input: {
       report_number: number,
       snapshot_json: snapshot,
       generated_by: user.user.id,
-      pdf_storage_path: `pending/${number}.pdf`,
+      pdf_storage_path: pdfPath,
       pdf_sha256: hash,
     })
   if (snapshotError)

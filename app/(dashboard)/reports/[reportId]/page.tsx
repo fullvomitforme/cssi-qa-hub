@@ -8,7 +8,7 @@ import { ReportPreview } from "@/components/features/reports/report-preview"
 import { Button } from "@/components/ui/button"
 import { getReportDetail } from "@/lib/data/product-seed"
 import { shouldUseDemoData } from "@/lib/env"
-import { getReportDetailReal } from "@/services/reports"
+import { getReportDetailReal, getReportPdfUrl } from "@/services/reports"
 
 export async function generateMetadata({
   params,
@@ -32,6 +32,7 @@ export default async function ReportPreviewPage({
     ? getReportDetail(reportId)
     : await getReportDetailReal(reportId)
   if (!report) notFound()
+  const pdfUrl = shouldUseDemoData() ? null : await getReportPdfUrl(reportId)
 
   return (
     <main className="min-w-0 bg-muted/30 pb-10">
@@ -49,7 +50,7 @@ export default async function ReportPreviewPage({
           <p className="text-xs text-muted-foreground">Final report preview</p>
         </div>
         <div className="ml-auto flex gap-2">
-          <PrintReportButton />
+          <PrintReportButton pdfUrl={pdfUrl} />
         </div>
       </div>
       <div className="p-4 lg:p-8">
