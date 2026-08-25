@@ -26,8 +26,12 @@ export default async function MembersPage({
     role: item.role,
     assignments: 0,
     activeRuns: 0,
-    lastActive: item.updated_at,
+    lastActive:
+      item.last_sign_in_at ??
+      item.email_confirmed_at ??
+      "Awaiting first sign-in",
     status: item.status,
+    invitationPending: item.invitation_pending,
   }))
 
   return (

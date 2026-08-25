@@ -34,6 +34,8 @@ import {
   createEnvironmentAction,
   createReleaseAction,
   advanceReleaseAction,
+  inviteMemberAction,
+  resendMemberInviteAction,
   toggleApplicationAction,
   toggleEnvironmentAction,
   updateMemberAction,
@@ -512,6 +514,7 @@ type MemberItem = {
   activeRuns: number
   lastActive: string
   status: "ACTIVE" | "INACTIVE"
+  invitationPending?: boolean
 }
 
 export function MembersList({
@@ -548,7 +551,7 @@ export function MembersList({
         onFilter={setFilter}
         filterOptions={["ADMIN", "QA_LEAD", "QA_TESTER"]}
         action="Invite QA member"
-        canManage={mode === "demo"}
+        canManage
         onAdd={() => setCreateOpen(true)}
       />
       <Table>
@@ -584,7 +587,27 @@ export function MembersList({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant="outline">{member.role.replace("_", " ")}</Badge>
+                {mode === "real" ? (
+                  <select
+                    aria-label={`Change ${member.name} role`}
+                    className="h-8 rounded-lg border bg-background px-2 text-sm"
+                    defaultValue={member.role}
+                    onChange={(event) =>
+                      void updateMemberAction(member.id, {
+                        role: event.target.value as MemberItem["role"],
+                        status: member.status,
+                      }).then(() => window.location.reload())
+                    }
+                  >
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="QA_LEAD">QA LEAD</option>
+                    <option value="QA_TESTER">QA TESTER</option>
+                  </select>
+                ) : (
+                  <Badge variant="outline">
+                    {member.role.replace("_", " ")}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {member.assignments}
@@ -592,7 +615,11 @@ export function MembersList({
               <TableCell className="text-right tabular-nums">
                 {member.activeRuns}
               </TableCell>
-              <TableCell>{member.lastActive}</TableCell>
+              <TableCell>
+                {member.invitationPending
+                  ? "Invitation pending"
+                  : member.lastActive}
+              </TableCell>
               <TableCell>
                 <Badge
                   variant={member.status === "ACTIVE" ? "success" : "neutral"}
@@ -600,61 +627,176 @@ export function MembersList({
                   {member.status}
                 </Badge>
               </TableCell>
-              <Actions
-                label={`Toggle ${member.name} status`}
-                onClick={() =>
-                  mode === "real"
-                    ? void updateMemberAction(member.id, {
-                        role: member.role,
-                        status:
-                          member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                      }).then(() => window.location.reload())
-                    : setItems((current) =>
-                        current.map((item) =>
-                          item.email === member.email
-                            ? {
-                                ...item,
-                                status:
-                                  item.status === "ACTIVE"
-                                    ? "INACTIVE"
-                                    : "ACTIVE",
-                              }
-                            : item
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  {mode === "real" && member.invitationPending ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        void resendMemberInviteAction(member.id).then(() =>
+                          window.location.reload()
                         )
-                      )
-                }
-              />
+                      }
+                    >
+                      Resend invite
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Toggle ${member.name} status`}
+                    title={`Toggle ${member.name} status`}
+                    onClick={() =>
+                      mode === "real"
+                        ? void updateMemberAction(member.id, {
+                            role: member.role,
+                            status:
+                              member.status === "ACTIVE"
+                                ? "INACTIVE"
+                                : "ACTIVE",
+                          }).then(() => window.location.reload())
+                        : setItems((current) =>
+                            current.map((item) =>
+                              item.email === member.email
+                                ? {
+                                    ...item,
+                                    status:
+                                      item.status === "ACTIVE"
+                                        ? "INACTIVE"
+                                        : "ACTIVE",
+                                  }
+                                : item
+                            )
+                          )
+                    }
+                  >
+                    <MoreHorizontalIcon />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      {mode === "demo" ? (
-        <CreateItemSheet
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          title="Invite QA member"
-          description="Add a local QA member row. No invitation will be sent."
-          primaryLabel="Full name"
-          secondaryLabel="Email"
-          onCreate={(name, email) => {
-            setItems((current) => [
-              ...current,
-              {
-                id: `demo-member-${Date.now()}`,
-                name,
-                email,
-                role: "QA_TESTER",
-                assignments: 0,
-                activeRuns: 0,
-                lastActive: "Invited locally",
-                status: "ACTIVE",
-              },
-            ])
-            setCreateOpen(false)
-          }}
-        />
+      <InviteMemberSheet
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        mode={mode}
+        onInvite={(input) => {
+          if (mode === "real") {
+            void inviteMemberAction(input).then(() => window.location.reload())
+            return
+          }
+          setItems((current) => [
+            ...current,
+            {
+              id: `demo-member-${Date.now()}`,
+              name: input.fullName,
+              email: input.email,
+              role: input.role,
+              assignments: 0,
+              activeRuns: 0,
+              lastActive: "Invited locally",
+              status: "ACTIVE",
+            },
+          ])
+          setCreateOpen(false)
+        }}
+      />
+      {mode === "real" ? (
+        <div className="border-t px-4 py-3 text-xs text-muted-foreground">
+          Invitations create real Supabase Auth users and provision matching QA
+          profiles.
+        </div>
       ) : null}
     </>
+  )
+}
+
+function InviteMemberSheet({
+  open,
+  onOpenChange,
+  mode,
+  onInvite,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  mode: "demo" | "real"
+  onInvite: (input: {
+    fullName: string
+    email: string
+    role: MemberItem["role"]
+  }) => void
+}) {
+  const [role, setRole] = useState<MemberItem["role"]>("QA_TESTER")
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-md">
+        <SheetHeader className="border-b">
+          <SheetTitle>Invite QA member</SheetTitle>
+          <SheetDescription>
+            {mode === "real"
+              ? "Send a real Supabase invitation and provision the member profile."
+              : "Add a local QA member row. No invitation will be sent."}
+          </SheetDescription>
+        </SheetHeader>
+        <form
+          className="flex h-full flex-col"
+          onSubmit={(event) => {
+            event.preventDefault()
+            const form = new FormData(event.currentTarget)
+            onInvite({
+              fullName: String(form.get("fullName") ?? ""),
+              email: String(form.get("email") ?? ""),
+              role,
+            })
+          }}
+        >
+          <div className="grid gap-4 p-4">
+            <label className="text-sm font-medium">
+              Full name
+              <Input name="fullName" className="mt-1.5" required />
+            </label>
+            <label className="text-sm font-medium">
+              Email
+              <Input
+                name="email"
+                type="email"
+                autoComplete="email"
+                className="mt-1.5"
+                required
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Role
+              <select
+                value={role}
+                onChange={(event) =>
+                  setRole(event.target.value as MemberItem["role"])
+                }
+                className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="QA_LEAD">QA LEAD</option>
+                <option value="QA_TESTER">QA TESTER</option>
+              </select>
+            </label>
+          </div>
+          <SheetFooter className="border-t">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Send invitation</Button>
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
   )
 }
 

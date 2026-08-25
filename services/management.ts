@@ -2,12 +2,15 @@ import "server-only"
 
 import { z } from "zod"
 
+import { getSiteUrl } from "@/lib/app-url"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export class ManagementMutationError extends Error {
   constructor(
     message: string,
-    readonly code: "FORBIDDEN" | "VALIDATION" | "UNKNOWN" = "UNKNOWN"
+    readonly code:
+      "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "UNKNOWN" = "UNKNOWN"
   ) {
     super(message)
   }
@@ -213,12 +216,141 @@ export async function advanceReleaseRecord(
 
 export async function listMemberRecords() {
   const { supabase } = await requireAdmin()
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id,full_name,email,role,status,updated_at")
-    .order("full_name")
+  const admin = createAdminClient()
+  const [{ data, error }, { data: authUsers, error: authError }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id,full_name,email,role,status,updated_at")
+        .order("full_name"),
+      admin.auth.admin.listUsers(),
+    ])
+
+  if (authError) {
+    throw new Error(`Unable to load invited users: ${authError.message}`)
+  }
   if (error) throw new Error(`Unable to load members: ${error.message}`)
-  return data ?? []
+
+  const authUsersById = new Map(
+    (authUsers?.users ?? []).map((user) => [user.id, user])
+  )
+
+  return (data ?? []).map((item) => {
+    const authUser = authUsersById.get(item.id)
+    const invitationPending =
+      authUser !== undefined &&
+      !authUser.email_confirmed_at &&
+      !authUser.last_sign_in_at
+
+    return {
+      ...item,
+      invitation_pending: invitationPending,
+      last_sign_in_at: authUser?.last_sign_in_at ?? null,
+      email_confirmed_at: authUser?.email_confirmed_at ?? null,
+    }
+  })
+}
+
+export async function inviteMemberRecord(input: {
+  email: string
+  fullName: string
+  role: "ADMIN" | "QA_LEAD" | "QA_TESTER"
+}) {
+  const parsed = z
+    .object({
+      email: z.email(),
+      fullName: z.string().trim().min(1).max(160),
+      role: z.enum(["ADMIN", "QA_LEAD", "QA_TESTER"]),
+    })
+    .safeParse(input)
+  if (!parsed.success)
+    throw new ManagementMutationError(
+      "Member invitation details are invalid.",
+      "VALIDATION"
+    )
+
+  const { supabase } = await requireAdmin()
+  const admin = createAdminClient()
+  const redirectTo = `${await getSiteUrl()}/auth/confirm?next=/auth/set-password`
+
+  const { data: invitation, error: inviteError } =
+    await admin.auth.admin.inviteUserByEmail(parsed.data.email, {
+      data: { name: parsed.data.fullName },
+      redirectTo,
+    })
+
+  if (inviteError || !invitation.user) {
+    throw new ManagementMutationError(
+      inviteError?.message.includes("already been registered")
+        ? "That email address is already registered."
+        : "Unable to send the invitation.",
+      inviteError?.status === 422 ? "VALIDATION" : "UNKNOWN"
+    )
+  }
+
+  const { error: profileError } = await supabase.from("profiles").upsert(
+    {
+      id: invitation.user.id,
+      email: parsed.data.email,
+      full_name: parsed.data.fullName,
+      role: parsed.data.role,
+      status: "ACTIVE",
+    },
+    { onConflict: "id" }
+  )
+  if (profileError) {
+    throw new ManagementMutationError(
+      `Invitation sent, but provisioning the QA profile failed: ${profileError.message}`
+    )
+  }
+}
+
+export async function resendMemberInviteRecord(id: string) {
+  const parsed = z.object({ id: z.uuid() }).safeParse({ id })
+  if (!parsed.success)
+    throw new ManagementMutationError(
+      "The selected member is invalid.",
+      "VALIDATION"
+    )
+
+  const { supabase } = await requireAdmin()
+  const admin = createAdminClient()
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id,email,full_name")
+    .eq("id", parsed.data.id)
+    .single()
+  if (profileError || !profile)
+    throw new ManagementMutationError("The selected member no longer exists.")
+
+  const { data: authUsers, error: authError } =
+    await admin.auth.admin.listUsers()
+  if (authError) {
+    throw new ManagementMutationError("Unable to load the invited member.")
+  }
+  const authUser = authUsers.users.find((user) => user.id === parsed.data.id)
+  if (!authUser)
+    throw new ManagementMutationError(
+      "The selected member does not have an auth identity yet.",
+      "NOT_FOUND"
+    )
+  if (authUser.email_confirmed_at) {
+    throw new ManagementMutationError(
+      "This member has already accepted their invitation.",
+      "VALIDATION"
+    )
+  }
+
+  const redirectTo = `${await getSiteUrl()}/auth/confirm?next=/auth/set-password`
+  const { error: resendError } = await admin.auth.admin.inviteUserByEmail(
+    profile.email,
+    {
+      data: { name: profile.full_name },
+      redirectTo,
+    }
+  )
+  if (resendError)
+    throw new ManagementMutationError("Unable to resend the invitation.")
 }
 
 export async function updateMemberRecord(

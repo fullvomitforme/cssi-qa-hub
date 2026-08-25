@@ -35,6 +35,15 @@ export type ReportListItem = {
 }
 
 export type ReportRunOption = { id: string; name: string; application: string }
+export type ReportApprovalKind = "PREPARED_BY" | "REVIEWED_BY" | "APPROVED_BY"
+
+export type ReportApprovalRecord = {
+  kind: ReportApprovalKind
+  approvedBy: string
+  approverRole: "ADMIN" | "QA_LEAD" | "QA_TESTER"
+  approvedAt: string
+  remarks: string | null
+}
 
 export async function listReportRunOptions(): Promise<ReportRunOption[]> {
   if (shouldUseDemoData()) return []
@@ -236,6 +245,36 @@ export async function getReportDetailReal(
   })
 }
 
+export async function getReportApprovalState(
+  reportId: string
+): Promise<ReportApprovalRecord[]> {
+  if (shouldUseDemoData()) return []
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("report_approvals")
+    .select(
+      "approval_kind,approver_role,approved_at,remarks,approved_by_profile:profiles!report_approvals_approved_by_fkey(full_name)"
+    )
+    .eq("report_id", reportId)
+    .order("approved_at", { ascending: true })
+
+  if (error) {
+    throw new Error(`Unable to load report approvals: ${error.message}`)
+  }
+
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    kind: row.approval_kind as ReportApprovalKind,
+    approvedBy: String(
+      (row.approved_by_profile as { full_name: string } | null)?.full_name ??
+        "Unknown"
+    ),
+    approverRole: row.approver_role as ReportApprovalRecord["approverRole"],
+    approvedAt: String(row.approved_at),
+    remarks: typeof row.remarks === "string" ? row.remarks : null,
+  }))
+}
+
 export async function getReportPdfUrl(id: string): Promise<string | null> {
   if (shouldUseDemoData()) return null
   const supabase = await createClient()
@@ -269,6 +308,16 @@ export async function createAndFinalizeReport(input: {
   const { data: user } = await supabase.auth.getUser()
   if (!user.user)
     throw new ReportMutationError("You must be signed in.", "FORBIDDEN")
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role,full_name")
+    .eq("id", user.user.id)
+    .single()
+  if (!profile)
+    throw new ReportMutationError(
+      "Your QA profile is unavailable.",
+      "FORBIDDEN"
+    )
   const { data: run, error: runError } = await supabase
     .from("test_runs")
     .select("id,application_id,applications(name)")
@@ -318,7 +367,7 @@ export async function createAndFinalizeReport(input: {
     result: parsed.data.result,
     conclusion: parsed.data.conclusion,
     generatedAt: report.created_at,
-    generatedBy: user.user.email ?? "QA Hub",
+    generatedBy: profile.full_name,
   })
   const pdfBytes = buildReportPdf(snapshot)
   const pdfPath = `reports/${report.id}/${number}.pdf`
@@ -348,5 +397,111 @@ export async function createAndFinalizeReport(input: {
     throw new ReportMutationError(
       `Report created, but immutable snapshot failed: ${snapshotError.message}`
     )
+  const { error: approvalError } = await supabase
+    .from("report_approvals")
+    .insert({
+      report_id: report.id,
+      approval_kind: "PREPARED_BY",
+      approved_by: user.user.id,
+      approver_role: profile.role,
+    })
+  if (approvalError)
+    throw new ReportMutationError(
+      `Report created, but the prepared approval could not be recorded: ${approvalError.message}`
+    )
   return report.id
+}
+
+export async function approveReport(input: {
+  reportId: string
+  kind: Exclude<ReportApprovalKind, "PREPARED_BY"> | "PREPARED_BY"
+  remarks?: string
+}) {
+  if (shouldUseDemoData()) {
+    throw new ReportMutationError("Demo mode uses local report state.")
+  }
+
+  const parsed = z
+    .object({
+      reportId: z.uuid(),
+      kind: z.enum(["PREPARED_BY", "REVIEWED_BY", "APPROVED_BY"]),
+      remarks: z.string().trim().max(1000).optional(),
+    })
+    .safeParse(input)
+
+  if (!parsed.success) {
+    throw new ReportMutationError(
+      "Report approval details are invalid.",
+      "VALIDATION"
+    )
+  }
+
+  const supabase = await createClient()
+  const { data: user } = await supabase.auth.getUser()
+  if (!user.user) {
+    throw new ReportMutationError("You must be signed in.", "FORBIDDEN")
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.user.id)
+    .single()
+  if (!profile) {
+    throw new ReportMutationError(
+      "Your QA profile is unavailable.",
+      "FORBIDDEN"
+    )
+  }
+
+  if (parsed.data.kind === "APPROVED_BY" && profile.role !== "ADMIN") {
+    throw new ReportMutationError(
+      "Only administrators can approve finalized reports.",
+      "FORBIDDEN"
+    )
+  }
+  if (
+    parsed.data.kind !== "APPROVED_BY" &&
+    !["ADMIN", "QA_LEAD"].includes(profile.role)
+  ) {
+    throw new ReportMutationError(
+      "You do not have permission to approve reports.",
+      "FORBIDDEN"
+    )
+  }
+
+  const approvals = await getReportApprovalState(parsed.data.reportId)
+  const hasPrepared = approvals.some((item) => item.kind === "PREPARED_BY")
+  const hasReviewed = approvals.some((item) => item.kind === "REVIEWED_BY")
+
+  if (parsed.data.kind === "REVIEWED_BY" && !hasPrepared) {
+    throw new ReportMutationError(
+      "The report must be prepared before it can be reviewed.",
+      "VALIDATION"
+    )
+  }
+  if (parsed.data.kind === "APPROVED_BY" && !hasReviewed) {
+    throw new ReportMutationError(
+      "The report must be reviewed before it can be approved.",
+      "VALIDATION"
+    )
+  }
+
+  const { error } = await supabase.from("report_approvals").insert({
+    report_id: parsed.data.reportId,
+    approval_kind: parsed.data.kind,
+    approved_by: user.user.id,
+    approver_role: profile.role,
+    remarks: parsed.data.remarks?.trim() || null,
+  })
+  if (error) {
+    throw new ReportMutationError(
+      error.code === "42501"
+        ? "You do not have permission to approve this report."
+        : error.code === "23505"
+          ? "That approval step has already been recorded."
+          : "Unable to save the report approval.",
+      error.code === "42501" ? "FORBIDDEN" : "UNKNOWN"
+    )
+  }
 }

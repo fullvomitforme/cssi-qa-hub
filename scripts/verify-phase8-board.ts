@@ -61,7 +61,7 @@ if (!boardItem) {
   boardItem = created.data
 }
 
-let moveResults = {
+const moveResults = {
   admin: "NOT_TESTED",
   lead: "NOT_TESTED",
   tester: "NOT_TESTED",

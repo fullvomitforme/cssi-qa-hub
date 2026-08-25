@@ -9,6 +9,8 @@ import {
   createApplicationRecord,
   createEnvironmentRecord,
   createReleaseRecord,
+  inviteMemberRecord,
+  resendMemberInviteRecord,
   toggleApplicationRecord,
   toggleEnvironmentRecord,
   updateMemberRecord,
@@ -126,6 +128,34 @@ export async function updateMemberAction(
   if (demo) return demo
   try {
     await updateMemberRecord(id, input)
+    revalidatePath("/management/members")
+    return { status: "success" }
+  } catch (error) {
+    return mapError(error)
+  }
+}
+
+export async function inviteMemberAction(input: {
+  email: string
+  fullName: string
+  role: "ADMIN" | "QA_LEAD" | "QA_TESTER"
+}): Promise<Result> {
+  const demo = guardDemo()
+  if (demo) return demo
+  try {
+    await inviteMemberRecord(input)
+    revalidatePath("/management/members")
+    return { status: "success" }
+  } catch (error) {
+    return mapError(error)
+  }
+}
+
+export async function resendMemberInviteAction(id: string): Promise<Result> {
+  const demo = guardDemo()
+  if (demo) return demo
+  try {
+    await resendMemberInviteRecord(id)
     revalidatePath("/management/members")
     return { status: "success" }
   } catch (error) {
