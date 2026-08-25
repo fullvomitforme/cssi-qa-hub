@@ -44,6 +44,7 @@ There are two ways to create the first admin:
 1. Create user in Supabase Dashboard → Authentication → Users
 2. Note the UUID
 3. Run SQL:
+
 ```sql
 INSERT INTO public.profiles (id, email, full_name, role, status)
 VALUES ('<auth-user-uuid>', 'admin@example.com', 'Admin User', 'ADMIN', 'ACTIVE');
@@ -77,33 +78,34 @@ npx tsx scripts/bootstrap-admin.ts
 1. ADMIN creates invite
    → admin.auth.admin.inviteUserByEmail(email, {redirectTo})
    → Profile created BEFORE invite sent
-   
+
 2. User clicks invite link
    → /auth/confirm?token_hash=...&type=invite&next=/auth/set-password
    → verifyOtp({token_hash, type})
    → Session established
    → Redirect to /auth/set-password
-   
+
 3. User sets password
    → updateUser({password})
    → Redirect to /overview (via redirect_to)
-   
+
 4. Future logins
    → /login → signInWithPassword → /overview
 ```
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Anon/public key |
-| `SUPABASE_SECRET_KEY` | Yes (server) | Service role key for admin ops |
-| `NEXT_PUBLIC_QA_DEMO_MODE` | No | Set to `true` to bypass Supabase |
+| Variable                               | Required     | Description                      |
+| -------------------------------------- | ------------ | -------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Yes          | Supabase project URL             |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes          | Anon/public key                  |
+| `SUPABASE_SECRET_KEY`                  | Yes (server) | Service role key for admin ops   |
+| `NEXT_PUBLIC_QA_DEMO_MODE`             | No           | Set to `true` to bypass Supabase |
 
 ## Demo Mode
 
 When `NEXT_PUBLIC_QA_DEMO_MODE=true`:
+
 - All auth checks return demo profile
 - No Supabase calls are made
 - Login page shows demo notice
@@ -146,6 +148,7 @@ function getLoginRedirect(decision: AccessDecision): string | null
 All tables have RLS enabled. Key policies:
 
 ### Read Policies
+
 ```sql
 -- Most tables: authenticated users can read
 create policy <table>_read on <table>
@@ -153,14 +156,16 @@ create policy <table>_read on <table>
 ```
 
 ### Write Policies
+
 ```sql
 -- Profiles: only ADMIN can insert/update
 create policy profiles_admin_insert on profiles
-  for insert to authenticated 
+  for insert to authenticated
   with check ((select private.has_role(array['ADMIN'])));
 ```
 
 ### Storage Policies
+
 ```sql
 -- Evidence: based on execution membership
 create policy evidence_insert on storage.objects
@@ -182,6 +187,7 @@ create policy evidence_insert on storage.objects
 ### Email Templates
 
 Customize in Dashboard → Authentication → Email Templates:
+
 - **Invite**: Include the invitation link with correct `redirect_to`
 - **Confirmation**: Standard email confirmation
 

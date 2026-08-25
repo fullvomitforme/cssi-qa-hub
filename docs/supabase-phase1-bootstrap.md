@@ -36,6 +36,7 @@ npx tsx scripts/bootstrap-admin.ts
 ```
 
 The script will:
+
 - Create or update the auth user
 - Create or update the profile
 - Set role to ADMIN
