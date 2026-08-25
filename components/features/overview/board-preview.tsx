@@ -57,7 +57,7 @@ export function BoardPreview() {
                   variant="ghost"
                   size="xs"
                   className="w-full justify-start text-muted-foreground"
-                  render={<Link href="/work" />}
+                  render={<Link href="/work?create=true" />}
                 >
                   <PlusIcon data-icon="inline-start" />
                   Add card

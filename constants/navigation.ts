@@ -101,7 +101,7 @@ export const commandItems: readonly NavigationItem[] = [
   },
   {
     title: "Portal Regression v1.9.0",
-    href: "/runs/run-portal",
+    href: "/runs/run-portal-regression",
     icon: PanelsTopLeftIcon,
   },
   { title: "Unread QA notifications", href: "/overview", icon: BellRingIcon },

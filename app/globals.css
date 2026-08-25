@@ -25,15 +25,35 @@
 }
 
 @media print {
-  [data-slot="sidebar"],
-  .report-toolbar,
-  header:has([data-sidebar="trigger"]) {
-    display: none !important;
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .report-paper,
+  .report-paper * {
+    visibility: visible;
   }
 
   .report-paper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     max-width: none;
     border: 0;
+    color: #111;
+    print-color-adjust: exact;
+  }
+
+  .report-paper > section,
+  .report-paper > header,
+  .report-paper article,
+  .report-paper dl {
+    break-inside: avoid-page;
   }
 }
 

@@ -364,46 +364,46 @@ export const testPlans = [
 
 export const testRuns = [
   {
-    id: "run-portal",
+    id: "run-portal-regression",
     name: "Portal Regression — v1.9.0",
     application: "Portal",
     release: "v1.9.0",
     build: "8fa2c91",
     environment: "UAT",
     tester: "Andi Pratama",
-    progress: 65,
-    passRate: 90.6,
+    progress: 75,
+    passRate: 66.7,
     status: "IN_PROGRESS",
     started: "Aug 24, 2026",
   },
   {
-    id: "run-crm",
+    id: "run-crm-regression",
     name: "CRM Regression — v1.9.0",
     application: "CRM",
     release: "v1.9.0",
     build: "a829d41",
     environment: "UAT",
     tester: "Siti Aisyah",
-    progress: 42,
-    passRate: 89.2,
+    progress: 80,
+    passRate: 50,
     status: "IN_PROGRESS",
     started: "Aug 24, 2026",
   },
   {
-    id: "run-flowra",
+    id: "run-flowra-regression",
     name: "Flowra Regression — v1.9.0",
     application: "Flowra",
     release: "v1.9.0",
     build: "a829d41",
     environment: "UAT",
     tester: "Budi Santoso",
-    progress: 70,
-    passRate: 84.3,
+    progress: 80,
+    passRate: 50,
     status: "BLOCKED",
     started: "Aug 23, 2026",
   },
   {
-    id: "run-itqm",
+    id: "run-itqm-smoke",
     name: "ITQM Smoke Test — v1.9.0",
     application: "ITQM",
     release: "v1.9.0",
@@ -416,15 +416,15 @@ export const testRuns = [
     started: "Aug 22, 2026",
   },
   {
-    id: "run-daily",
+    id: "run-daily-regression",
     name: "Daily Ops Regression — v1.9.0",
     application: "Daily Operation",
     release: "v1.9.0",
     build: "8fa2c91",
     environment: "UAT",
     tester: "Budi Santoso",
-    progress: 81,
-    passRate: 93.0,
+    progress: 80,
+    passRate: 100,
     status: "IN_PROGRESS",
     started: "Aug 25, 2026",
   },
@@ -442,6 +442,8 @@ export const failureItems = [
     foundBy: "Andi Pratama",
     foundAt: "Aug 26, 2026 14:23",
     retestStatus: "AWAITING_FIX",
+    runId: "run-portal-regression",
+    executionId: "e3",
   },
   {
     id: "f2",
@@ -454,6 +456,8 @@ export const failureItems = [
     foundBy: "Siti Aisyah",
     foundAt: "Aug 26, 2026 11:05",
     retestStatus: "READY",
+    runId: "run-crm-regression",
+    executionId: "crm-e2",
   },
   {
     id: "f3",
@@ -466,6 +470,8 @@ export const failureItems = [
     foundBy: "Budi Santoso",
     foundAt: "Aug 25, 2026 16:40",
     retestStatus: "FAILED_AGAIN",
+    runId: "run-flowra-regression",
+    executionId: "flowra-e2",
   },
   {
     id: "f4",
@@ -478,6 +484,8 @@ export const failureItems = [
     foundBy: "Andi Pratama",
     foundAt: "Aug 25, 2026 10:18",
     retestStatus: "PASSED",
+    runId: "run-portal-regression",
+    executionId: "e7",
   },
   {
     id: "f5",
@@ -490,6 +498,8 @@ export const failureItems = [
     foundBy: "Budi Santoso",
     foundAt: "Aug 24, 2026 15:02",
     retestStatus: "AWAITING_FIX",
+    runId: "run-daily-regression",
+    executionId: "daily-e3",
   },
 ] as const
 
@@ -568,7 +578,7 @@ export const feedbackItems = [
 
 export const reports = [
   {
-    id: "report-portal",
+    id: "QA-PORTAL-2026-0081",
     number: "QA-PORTAL-2026-0081",
     application: "Portal",
     release: "v1.9.0",
@@ -578,7 +588,7 @@ export const reports = [
     generatedAt: "Aug 26, 2026 17:30",
   },
   {
-    id: "report-crm",
+    id: "QA-CRM-2026-0034",
     number: "QA-CRM-2026-0034",
     application: "CRM",
     release: "v1.9.0",
@@ -588,7 +598,7 @@ export const reports = [
     generatedAt: "Aug 25, 2026 18:05",
   },
   {
-    id: "report-flowra",
+    id: "QA-FLOWRA-2026-0028",
     number: "QA-FLOWRA-2026-0028",
     application: "Flowra",
     release: "v1.9.0",
@@ -598,7 +608,7 @@ export const reports = [
     generatedAt: "Aug 25, 2026 16:20",
   },
   {
-    id: "report-itqm",
+    id: "QA-ITQM-2026-0019",
     number: "QA-ITQM-2026-0019",
     application: "ITQM",
     release: "v1.9.0",
@@ -822,6 +832,23 @@ export type MockExecution = {
   bugReference: string
   tester: string
   testedAt: string | null
+  attempts?: MockExecutionAttempt[]
+  feedback?: MockExecutionFeedback[]
+}
+
+export type MockExecutionAttempt = {
+  number: number
+  status: Exclude<MockExecution["status"], "NOT_TESTED">
+  build: string
+  testedAt: string
+}
+
+export type MockExecutionFeedback = {
+  id: string
+  type: "BUG" | "UX" | "COPY" | "IMPROVEMENT" | "QUESTION"
+  comment: string
+  author: string
+  createdAt: string
 }
 
 export const portalExecutions: MockExecution[] = [
@@ -885,6 +912,29 @@ export const portalExecutions: MockExecution[] = [
     bugReference: "PORTAL-482",
     tester: "Andi Pratama",
     testedAt: "Aug 25, 2026 10:26",
+    attempts: [
+      {
+        number: 1,
+        status: "FAIL",
+        build: "8fa2c91",
+        testedAt: "Aug 24, 2026 16:18",
+      },
+      {
+        number: 2,
+        status: "FAIL",
+        build: "8fa2c91",
+        testedAt: "Aug 25, 2026 10:26",
+      },
+    ],
+    feedback: [
+      {
+        id: "ef-portal-1",
+        type: "BUG",
+        comment: "The protected dashboard flashes before access is revoked.",
+        author: "Andi Pratama",
+        createdAt: "Aug 25, 2026 10:29",
+      },
+    ],
   },
   {
     id: "e4",
@@ -982,3 +1032,629 @@ export const portalExecutions: MockExecution[] = [
     testedAt: "Aug 25, 2026 11:32",
   },
 ]
+
+function mockExecution(
+  execution: Omit<
+    MockExecution,
+    "actualResult" | "failureReason" | "bugReference" | "testedAt"
+  > &
+    Partial<
+      Pick<
+        MockExecution,
+        "actualResult" | "failureReason" | "bugReference" | "testedAt"
+      >
+    >
+): MockExecution {
+  return {
+    actualResult: "",
+    failureReason: "",
+    bugReference: "",
+    testedAt: null,
+    ...execution,
+  }
+}
+
+const crmExecutions: MockExecution[] = [
+  mockExecution({
+    id: "crm-e1",
+    module: "Leads",
+    title: "Create a qualified lead",
+    description: "Create a lead with complete qualification details.",
+    preconditions: "Tester has create access to CRM Leads.",
+    steps: [
+      "Open Leads",
+      "Select New Lead",
+      "Complete required fields",
+      "Save",
+    ],
+    expectedResult: "The qualified lead appears in the active pipeline.",
+    actualResult: "Lead created and visible in the Qualified view.",
+    status: "PASS",
+    severity: null,
+    tester: "Siti Aisyah",
+    testedAt: "Aug 25, 2026 09:15",
+  }),
+  mockExecution({
+    id: "crm-e2",
+    module: "Leads",
+    title: "Export filtered leads to CSV",
+    description: "Ensure CSV export preserves active filters.",
+    preconditions: "Qualified leads exist and export permission is granted.",
+    steps: ["Filter leads to Qualified", "Select Export CSV", "Open the file"],
+    expectedResult: "Only qualified leads are included in the CSV.",
+    actualResult: "Archived leads were included in the export.",
+    status: "FAIL",
+    severity: "MEDIUM",
+    failureReason: "Export ignored the archived-state filter.",
+    bugReference: "CRM-356",
+    tester: "Siti Aisyah",
+    testedAt: "Aug 25, 2026 11:05",
+    attempts: [
+      {
+        number: 1,
+        status: "FAIL",
+        build: "91ac020",
+        testedAt: "Aug 24, 2026 15:42",
+      },
+      {
+        number: 2,
+        status: "FAIL",
+        build: "a829d41",
+        testedAt: "Aug 25, 2026 11:05",
+      },
+    ],
+  }),
+  mockExecution({
+    id: "crm-e3",
+    module: "Accounts",
+    title: "Link lead to an existing account",
+    description: "Associate a converted lead with an existing account.",
+    preconditions: "A converted lead and active account exist.",
+    steps: [
+      "Open converted lead",
+      "Select Link Account",
+      "Choose account",
+      "Confirm",
+    ],
+    expectedResult: "The account relationship is visible from both records.",
+    actualResult: "Relationship created in both views.",
+    status: "PASS",
+    severity: null,
+    tester: "Siti Aisyah",
+    testedAt: "Aug 25, 2026 12:10",
+  }),
+  mockExecution({
+    id: "crm-e4",
+    module: "Activities",
+    title: "Record a customer call",
+    description: "Save a call activity against a lead.",
+    preconditions: "An active lead exists.",
+    steps: ["Open lead", "Add Call activity", "Enter notes", "Save"],
+    expectedResult: "The call appears in the activity timeline.",
+    status: "SKIPPED",
+    severity: null,
+    tester: "Siti Aisyah",
+    testedAt: "Aug 25, 2026 13:02",
+  }),
+  mockExecution({
+    id: "crm-e5",
+    module: "Permissions",
+    title: "Restrict lead deletion to managers",
+    description: "Verify standard agents cannot delete leads.",
+    preconditions: "Tester is signed in as a standard sales agent.",
+    steps: ["Open lead actions", "Inspect available destructive actions"],
+    expectedResult: "Delete is not available to the standard agent.",
+    status: "NOT_TESTED",
+    severity: null,
+    tester: "Siti Aisyah",
+  }),
+]
+
+const flowraExecutions: MockExecution[] = [
+  mockExecution({
+    id: "flowra-e1",
+    module: "Opening Account",
+    title: "Restore personal data after autosave",
+    description: "Resume a saved application without losing personal data.",
+    preconditions: "A draft individual account application exists.",
+    steps: ["Complete Personal Data", "Wait for autosave", "Reopen the draft"],
+    expectedResult: "Saved values are restored at the last completed section.",
+    actualResult: "All personal fields restored correctly.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 09:40",
+  }),
+  mockExecution({
+    id: "flowra-e2",
+    module: "Opening Account",
+    title: "Submit a complete individual application",
+    description: "Submit the full onboarding workflow for review.",
+    preconditions: "All required onboarding sections are complete.",
+    steps: ["Review summary", "Accept declarations", "Select Submit"],
+    expectedResult:
+      "Application enters the review queue with a reference number.",
+    actualResult: "Submission returned an incomplete-document error.",
+    status: "FAIL",
+    severity: "HIGH",
+    failureReason:
+      "A previously uploaded identity file was not attached to submission.",
+    bugReference: "FLOWRA-201",
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 16:40",
+  }),
+  mockExecution({
+    id: "flowra-e3",
+    module: "Documents",
+    title: "Upload identity document",
+    description: "Attach a supported identity image to an application.",
+    preconditions: "A draft application is open.",
+    steps: ["Open Documents", "Choose JPG file", "Confirm upload"],
+    expectedResult:
+      "The document preview appears with a successful scan status.",
+    actualResult: "Preview and scan status displayed.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 14:08",
+  }),
+  mockExecution({
+    id: "flowra-e4",
+    module: "Risk Review",
+    title: "Load suitability questionnaire",
+    description: "Open the investor suitability questions.",
+    preconditions: "Risk scoring API is available.",
+    steps: ["Open Risk Review", "Wait for questionnaire"],
+    expectedResult: "Questions load with the current scoring rules.",
+    actualResult: "Risk scoring API is unavailable in UAT.",
+    status: "BLOCKED",
+    severity: null,
+    failureReason: "Dependency health check is failing.",
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 14:22",
+  }),
+  mockExecution({
+    id: "flowra-e5",
+    module: "Notifications",
+    title: "Send submission confirmation",
+    description: "Notify the applicant after successful submission.",
+    preconditions: "A valid application is ready to submit.",
+    steps: ["Submit application", "Check registered email"],
+    expectedResult: "A confirmation email includes the application reference.",
+    status: "NOT_TESTED",
+    severity: null,
+    tester: "Budi Santoso",
+  }),
+]
+
+const itqmExecutions: MockExecution[] = [
+  mockExecution({
+    id: "itqm-e1",
+    module: "Development Request",
+    title: "Create a development request",
+    description: "Submit a complete development request for review.",
+    preconditions: "Tester has request creation access.",
+    steps: ["Open Requests", "Select New", "Complete fields", "Submit"],
+    expectedResult: "The request enters the approval queue.",
+    actualResult: "Request submitted successfully.",
+    status: "PASS",
+    severity: null,
+    tester: "Andi Pratama",
+    testedAt: "Aug 24, 2026 10:05",
+  }),
+  mockExecution({
+    id: "itqm-e2",
+    module: "Development Request",
+    title: "Restrict approval to assigned approvers",
+    description: "Prevent unassigned users from approving requests.",
+    preconditions: "Tester is not an assigned approver.",
+    steps: ["Open pending request", "Inspect approval actions"],
+    expectedResult: "Approval controls are unavailable.",
+    actualResult: "No approval controls rendered.",
+    status: "PASS",
+    severity: null,
+    tester: "Andi Pratama",
+    testedAt: "Aug 24, 2026 10:30",
+  }),
+  mockExecution({
+    id: "itqm-e3",
+    module: "Reports",
+    title: "Export approval history",
+    description: "Download the approval audit history.",
+    preconditions: "Approved requests exist.",
+    steps: ["Open Reports", "Choose Approval History", "Export"],
+    expectedResult: "The export includes every approval transition.",
+    actualResult: "Export matched the audit history.",
+    status: "PASS",
+    severity: null,
+    tester: "Andi Pratama",
+    testedAt: "Aug 24, 2026 11:15",
+  }),
+  mockExecution({
+    id: "itqm-e4",
+    module: "Dashboard",
+    title: "Display overdue requests",
+    description: "Highlight requests beyond their target date.",
+    preconditions: "At least one overdue request exists.",
+    steps: ["Open dashboard", "Review overdue section"],
+    expectedResult: "Overdue requests are clearly identified.",
+    actualResult: "All overdue requests displayed.",
+    status: "PASS",
+    severity: null,
+    tester: "Andi Pratama",
+    testedAt: "Aug 24, 2026 11:42",
+  }),
+]
+
+const dailyExecutions: MockExecution[] = [
+  mockExecution({
+    id: "daily-e1",
+    module: "Today Workspace",
+    title: "Load assigned daily tasks",
+    description: "Show all operational tasks assigned for today.",
+    preconditions: "Tester has active task assignments.",
+    steps: ["Open Today Workspace", "Review assigned tasks"],
+    expectedResult: "All current assignments are visible.",
+    actualResult: "Assignments loaded correctly.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 08:35",
+  }),
+  mockExecution({
+    id: "daily-e2",
+    module: "Today Workspace",
+    title: "Prevent incomplete task submission",
+    description: "Block submission while required items are incomplete.",
+    preconditions: "One required task item is incomplete.",
+    steps: ["Leave required item incomplete", "Select Submit"],
+    expectedResult: "Submission is blocked with clear guidance.",
+    actualResult: "Submission blocked and item highlighted.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 09:02",
+  }),
+  mockExecution({
+    id: "daily-e3",
+    module: "Approvals",
+    title: "Require a rejection comment",
+    description: "Prevent approval rejection without a reason.",
+    preconditions: "A task is awaiting approval.",
+    steps: ["Select Reject", "Leave comment empty", "Confirm"],
+    expectedResult: "A rejection comment is required.",
+    actualResult: "Validation appeared beside the comment field.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 10:18",
+  }),
+  mockExecution({
+    id: "daily-e4",
+    module: "History",
+    title: "Review task activity history",
+    description: "Display every task status transition.",
+    preconditions: "A task has multiple status changes.",
+    steps: ["Open task", "Select History"],
+    expectedResult: "Chronological status history is visible.",
+    actualResult: "History displayed in chronological order.",
+    status: "PASS",
+    severity: null,
+    tester: "Budi Santoso",
+    testedAt: "Aug 25, 2026 11:24",
+  }),
+  mockExecution({
+    id: "daily-e5",
+    module: "History",
+    title: "Filter history by owner",
+    description: "Limit history results to one task owner.",
+    preconditions: "History contains tasks from several owners.",
+    steps: ["Open History", "Choose owner filter"],
+    expectedResult: "Only the selected owner's records remain.",
+    status: "NOT_TESTED",
+    severity: null,
+    tester: "Budi Santoso",
+  }),
+]
+
+export type MockRunDetail = (typeof testRuns)[number] & {
+  endDate: string
+  executions: MockExecution[]
+}
+
+export const testRunDetails: MockRunDetail[] = testRuns.map((run) => ({
+  ...run,
+  endDate: run.id === "run-daily-regression" ? "Aug 27, 2026" : "Aug 26, 2026",
+  executions:
+    run.id === "run-portal-regression"
+      ? portalExecutions
+      : run.id === "run-crm-regression"
+        ? crmExecutions
+        : run.id === "run-flowra-regression"
+          ? flowraExecutions
+          : run.id === "run-itqm-smoke"
+            ? itqmExecutions
+            : dailyExecutions,
+}))
+
+const runAliases: Record<string, string> = {
+  "run-portal": "run-portal-regression",
+  "run-crm": "run-crm-regression",
+  "run-flowra": "run-flowra-regression",
+  "run-itqm": "run-itqm-smoke",
+  "run-daily": "run-daily-regression",
+}
+
+export function getTestRunDetail(id: string) {
+  const canonicalId = runAliases[id] ?? id
+  return testRunDetails.find((run) => run.id === canonicalId)
+}
+
+export type MockReportScenarioStatus =
+  "PASS" | "FAIL" | "BLOCKED" | "NOT TESTED"
+
+export type MockReportDetail = (typeof reports)[number] & {
+  build: string
+  period: string
+  members: string
+  branch: string
+  summary: {
+    total: number
+    executed: number
+    passed: number
+    failed: number
+    blocked: number
+    notTested: number
+  }
+  modules: Array<{
+    module: string
+    scenarios: Array<[string, MockReportScenarioStatus]>
+  }>
+  primaryFailure: {
+    scenario: string
+    feature: string
+    bugReference: string
+    severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+    expected: string
+    actual: string
+    reason: string
+    tester: string
+  }
+  findings: [number, number, number, number]
+  unresolved: number
+  conclusion: string
+  preparedBy: string
+  reviewedBy: string
+  approvedBy: string
+}
+
+const reportModules: Record<string, MockReportDetail["modules"]> = {
+  Portal: [
+    {
+      module: "Authentication",
+      scenarios: [
+        ["Login with valid credentials", "PASS"],
+        ["Reject invalid password", "PASS"],
+        ["Locked account cannot sign in", "FAIL"],
+        ["Logout clears active session", "PASS"],
+        ["Session expiration", "NOT TESTED"],
+      ],
+    },
+    {
+      module: "User Management",
+      scenarios: [
+        ["Create standard employee", "PASS"],
+        ["Edit employee role", "PASS"],
+        ["Delete user with active assignments", "BLOCKED"],
+      ],
+    },
+  ],
+  CRM: [
+    {
+      module: "Leads",
+      scenarios: [
+        ["Create a qualified lead", "PASS"],
+        ["Export filtered leads to CSV", "FAIL"],
+        ["Convert lead to account", "PASS"],
+      ],
+    },
+    {
+      module: "Activities",
+      scenarios: [
+        ["Record a customer call", "NOT TESTED"],
+        ["Filter activities by owner", "BLOCKED"],
+      ],
+    },
+  ],
+  Flowra: [
+    {
+      module: "Opening Account",
+      scenarios: [
+        ["Restore personal data after autosave", "PASS"],
+        ["Submit a complete individual application", "FAIL"],
+        ["Upload identity document", "PASS"],
+      ],
+    },
+    {
+      module: "Risk Review",
+      scenarios: [["Load suitability questionnaire", "BLOCKED"]],
+    },
+  ],
+  ITQM: [
+    {
+      module: "Development Request",
+      scenarios: [
+        ["Create a development request", "PASS"],
+        ["Restrict approval to assigned approvers", "PASS"],
+        ["Export approval history", "PASS"],
+        ["Display overdue requests", "PASS"],
+      ],
+    },
+  ],
+}
+
+const reportOverrides: Record<
+  string,
+  Pick<
+    MockReportDetail,
+    | "build"
+    | "period"
+    | "members"
+    | "branch"
+    | "summary"
+    | "primaryFailure"
+    | "findings"
+    | "unresolved"
+    | "conclusion"
+    | "preparedBy"
+    | "reviewedBy"
+    | "approvedBy"
+  >
+> = {
+  Portal: {
+    build: "a829d41",
+    period: "24–26 August 2026",
+    members: "Andi Pratama / Budi Santoso",
+    branch: "release/1.9",
+    summary: {
+      total: 148,
+      executed: 142,
+      passed: 131,
+      failed: 7,
+      blocked: 4,
+      notTested: 6,
+    },
+    primaryFailure: {
+      scenario: "Locked account cannot sign in",
+      feature: "Authentication",
+      bugReference: "PORTAL-482",
+      severity: "HIGH",
+      expected:
+        "Access is denied and support guidance is shown without creating a session.",
+      actual:
+        "The dashboard appeared briefly before redirecting to the locked-account screen.",
+      reason: "Authorization is evaluated after protected content hydrates.",
+      tester: "Andi Pratama · 25 August 2026, 10:26",
+    },
+    findings: [1, 3, 5, 2],
+    unresolved: 8,
+    conclusion:
+      "Release can proceed after resolution and successful retest of PORTAL-482 and PORTAL-491. Remaining medium and low findings are accepted for v1.9.1.",
+    preparedBy: "Andi Pratama",
+    reviewedBy: "Siti Aisyah",
+    approvedBy: "Rina Mahendra",
+  },
+  CRM: {
+    build: "a829d41",
+    period: "24–25 August 2026",
+    members: "Siti Aisyah / Dewi Larasati",
+    branch: "release/1.9",
+    summary: {
+      total: 126,
+      executed: 106,
+      passed: 82,
+      failed: 16,
+      blocked: 8,
+      notTested: 20,
+    },
+    primaryFailure: {
+      scenario: "Export filtered leads to CSV",
+      feature: "Leads",
+      bugReference: "CRM-356",
+      severity: "MEDIUM",
+      expected: "The CSV contains only leads matching the active filters.",
+      actual: "Archived leads were included in the exported file.",
+      reason: "The export query ignored the archived-state filter.",
+      tester: "Siti Aisyah · 25 August 2026, 11:05",
+    },
+    findings: [2, 5, 9, 4],
+    unresolved: 15,
+    conclusion:
+      "CRM v1.9.0 is not ready for release. Lead export and permission failures require fixes and a focused regression pass.",
+    preparedBy: "Siti Aisyah",
+    reviewedBy: "Andi Pratama",
+    approvedBy: "Rina Mahendra",
+  },
+  Flowra: {
+    build: "a829d41",
+    period: "23–25 August 2026",
+    members: "Budi Santoso / Andi Pratama",
+    branch: "release/1.9",
+    summary: {
+      total: 94,
+      executed: 76,
+      passed: 64,
+      failed: 7,
+      blocked: 5,
+      notTested: 18,
+    },
+    primaryFailure: {
+      scenario: "Submit a complete individual application",
+      feature: "Opening Account",
+      bugReference: "FLOWRA-201",
+      severity: "HIGH",
+      expected: "The application enters review with a reference number.",
+      actual: "Submission returned an incomplete-document error.",
+      reason:
+        "A previously uploaded identity file was omitted from submission.",
+      tester: "Budi Santoso · 25 August 2026, 16:40",
+    },
+    findings: [0, 4, 6, 3],
+    unresolved: 9,
+    conclusion:
+      "Flowra may proceed conditionally after FLOWRA-201 is fixed and the submission path passes retest.",
+    preparedBy: "Budi Santoso",
+    reviewedBy: "Andi Pratama",
+    approvedBy: "Rina Mahendra",
+  },
+  ITQM: {
+    build: "a829d41",
+    period: "22–24 August 2026",
+    members: "Andi Pratama",
+    branch: "release/1.9",
+    summary: {
+      total: 38,
+      executed: 38,
+      passed: 37,
+      failed: 0,
+      blocked: 1,
+      notTested: 0,
+    },
+    primaryFailure: {
+      scenario: "Approval dependency availability",
+      feature: "Development Request",
+      bugReference: "ITQM-88",
+      severity: "LOW",
+      expected:
+        "Approval dependency remains available throughout smoke testing.",
+      actual: "One transient timeout was observed and recovered on retry.",
+      reason: "UAT dependency restarted during the test window.",
+      tester: "Andi Pratama · 24 August 2026, 13:30",
+    },
+    findings: [0, 0, 0, 1],
+    unresolved: 0,
+    conclusion:
+      "ITQM smoke testing passed. The transient dependency note is accepted and does not block release.",
+    preparedBy: "Andi Pratama",
+    reviewedBy: "Siti Aisyah",
+    approvedBy: "Rina Mahendra",
+  },
+}
+
+export const reportDetails: MockReportDetail[] = reports.map((report) => ({
+  ...report,
+  ...reportOverrides[report.application],
+  modules: reportModules[report.application],
+}))
+
+const reportAliases: Record<string, string> = {
+  "report-portal": "QA-PORTAL-2026-0081",
+  "report-crm": "QA-CRM-2026-0034",
+  "report-flowra": "QA-FLOWRA-2026-0028",
+  "report-itqm": "QA-ITQM-2026-0019",
+}
+
+export function getReportDetail(id: string) {
+  const canonicalId = reportAliases[id] ?? id
+  return reportDetails.find((report) => report.id === canonicalId)
+}

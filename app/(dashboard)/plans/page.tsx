@@ -4,7 +4,12 @@ import { PlanList } from "@/components/features/plans/plan-list"
 
 export const metadata: Metadata = { title: "Test Plans" }
 
-export default function PlansPage() {
+export default async function PlansPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ create?: string | string[] }>
+}) {
+  const query = await searchParams
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -13,7 +18,7 @@ export default function PlansPage() {
           Define reusable QA scope, ownership, and completion targets.
         </p>
       </div>
-      <PlanList />
+      <PlanList initialCreateOpen={query.create === "true"} />
     </main>
   )
 }

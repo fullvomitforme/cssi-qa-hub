@@ -36,6 +36,8 @@ export default async function OverviewPage() {
             <select
               aria-label="Release"
               defaultValue="v1.9.0"
+              disabled
+              title="The current mock dashboard contains one v1.9.0 snapshot."
               className="bg-transparent font-medium"
             >
               <option>v1.9.0</option>
@@ -46,20 +48,26 @@ export default async function OverviewPage() {
             <select
               aria-label="Environment"
               defaultValue="UAT"
+              disabled
+              title="The current mock dashboard contains one UAT snapshot."
               className="bg-transparent font-medium"
             >
               <option>UAT</option>
-              <option>Staging</option>
             </select>
           </label>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            title="The mock snapshot covers Aug 19–Aug 25, 2026."
+          >
             <CalendarDaysIcon data-icon="inline-start" />
             Aug 19 – Aug 25, 2026
           </Button>
           <Button
             variant="inverse"
             size="sm"
-            render={<Link href="/reports/report-portal" />}
+            render={<Link href="/reports/QA-PORTAL-2026-0081" />}
           >
             <FileOutputIcon data-icon="inline-start" />
             Generate Report

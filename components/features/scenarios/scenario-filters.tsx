@@ -5,13 +5,20 @@ import { Input } from "@/components/ui/input"
 
 export function ScenarioFilters({
   values,
+  modules,
+  features,
 }: {
   values: {
     search?: string
     application?: string
+    module?: string
+    feature?: string
     type?: string
     priority?: string
+    updated?: string
   }
+  modules: string[]
+  features: string[]
 }) {
   return (
     <form
@@ -47,6 +54,38 @@ export function ScenarioFilters({
         <option value="itqm">ITQM</option>
         <option value="intranet">Intranet</option>
       </select>
+      <label className="sr-only" htmlFor="module">
+        Module
+      </label>
+      <select
+        id="module"
+        name="module"
+        defaultValue={values.module ?? ""}
+        className="h-8 rounded-lg border bg-background px-2 text-sm"
+      >
+        <option value="">All modules</option>
+        {modules.map((module) => (
+          <option key={module} value={module}>
+            {module}
+          </option>
+        ))}
+      </select>
+      <label className="sr-only" htmlFor="feature">
+        Feature
+      </label>
+      <select
+        id="feature"
+        name="feature"
+        defaultValue={values.feature ?? ""}
+        className="h-8 rounded-lg border bg-background px-2 text-sm"
+      >
+        <option value="">All features</option>
+        {features.map((feature) => (
+          <option key={feature} value={feature}>
+            {feature}
+          </option>
+        ))}
+      </select>
       <label className="sr-only" htmlFor="type">
         Test type
       </label>
@@ -73,6 +112,20 @@ export function ScenarioFilters({
             {type.replaceAll("_", " ")}
           </option>
         ))}
+      </select>
+      <label className="sr-only" htmlFor="updated">
+        Updated
+      </label>
+      <select
+        id="updated"
+        name="updated"
+        defaultValue={values.updated ?? ""}
+        className="h-8 rounded-lg border bg-background px-2 text-sm"
+      >
+        <option value="">Any updated date</option>
+        <option value="3d">Updated in 3 days</option>
+        <option value="7d">Updated in 7 days</option>
+        <option value="30d">Updated in 30 days</option>
       </select>
       <label className="sr-only" htmlFor="priority">
         Priority

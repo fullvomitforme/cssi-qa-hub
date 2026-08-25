@@ -62,7 +62,12 @@ export default async function ScenarioDetailPage({
           </p>
         </div>
         {profile.role !== "QA_TESTER" ? (
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            title="Persisted scenario editing will be available after backend integration."
+          >
             <PencilIcon data-icon="inline-start" />
             Edit Scenario
           </Button>

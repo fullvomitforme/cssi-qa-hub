@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { CalendarDaysIcon, PlusIcon, SearchIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { testPlans } from "@/lib/data/product-seed"
+import { scenarioSeed } from "@/lib/data/seed"
 
 const variants = {
   ACTIVE: "success",
@@ -39,14 +40,64 @@ const variants = {
   DRAFT: "outline",
 } as const
 
-export function PlanList() {
-  const [createOpen, setCreateOpen] = useState(false)
-  const [search, setSearch] = useState("")
-  const plans = testPlans.filter((plan) =>
-    `${plan.name} ${plan.application}`
-      .toLocaleLowerCase()
-      .includes(search.toLocaleLowerCase())
+type LocalPlan = {
+  id: string
+  name: string
+  application: string
+  release: string
+  environment: string
+  owner: string
+  scenarios: number
+  progress: number
+  status: keyof typeof variants
+  targetDate: string
+}
+
+export function PlanList({
+  initialCreateOpen = false,
+}: {
+  initialCreateOpen?: boolean
+}) {
+  const [allPlans, setAllPlans] = useState<LocalPlan[]>(() =>
+    testPlans.map((plan) => ({ ...plan }))
   )
+  const [createOpen, setCreateOpen] = useState(initialCreateOpen)
+  const [search, setSearch] = useState("")
+  const [status, setStatus] = useState("all")
+  const [scenarioBrowserOpen, setScenarioBrowserOpen] = useState(false)
+  const [selectedScenarioIds, setSelectedScenarioIds] = useState<string[]>([])
+  const selectedScenarioIdSet = useMemo(
+    () => new Set(selectedScenarioIds),
+    [selectedScenarioIds]
+  )
+  const plans = allPlans.filter(
+    (plan) =>
+      `${plan.name} ${plan.application}`
+        .toLocaleLowerCase()
+        .includes(search.toLocaleLowerCase()) &&
+      (status === "all" || plan.status === status)
+  )
+
+  function createPlan(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const plan: LocalPlan = {
+      id: `local-plan-${Date.now()}`,
+      name: String(form.get("name")),
+      application: String(form.get("application")),
+      release: String(form.get("release")),
+      environment: String(form.get("environment")),
+      owner: String(form.get("owner")),
+      scenarios: selectedScenarioIds.length,
+      progress: 0,
+      status: "DRAFT",
+      targetDate: String(form.get("targetDate")),
+    }
+    setAllPlans((current) => [plan, ...current])
+    setSelectedScenarioIds([])
+    setScenarioBrowserOpen(false)
+    setCreateOpen(false)
+  }
 
   return (
     <>
@@ -60,15 +111,19 @@ export function PlanList() {
             className="pl-8"
           />
         </div>
-        <Select defaultValue="all">
+        <Select
+          value={status}
+          onValueChange={(value) => setStatus(value ?? "all")}
+        >
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="ready">Ready</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="READY">Ready</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="DRAFT">Draft</SelectItem>
           </SelectContent>
         </Select>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
@@ -91,7 +146,7 @@ export function PlanList() {
           </TableHeader>
           <TableBody>
             {plans.map((plan) => (
-              <TableRow key={plan.id} className="cursor-pointer">
+              <TableRow key={plan.id}>
                 <TableCell>
                   <p className="font-medium">{plan.name}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -138,11 +193,12 @@ export function PlanList() {
               Define what should be tested in this release cycle.
             </SheetDescription>
           </SheetHeader>
-          <form className="flex flex-1 flex-col">
+          <form className="flex flex-1 flex-col" onSubmit={createPlan}>
             <div className="space-y-4 p-4">
               <label className="block text-sm font-medium">
                 Plan name
                 <Input
+                  name="name"
                   className="mt-1.5"
                   placeholder="Portal v1.10.0 Regression"
                 />
@@ -150,34 +206,62 @@ export function PlanList() {
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-sm font-medium">
                   Application
-                  <Select defaultValue="portal">
-                    <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="portal">Portal</SelectItem>
-                      <SelectItem value="crm">CRM</SelectItem>
-                      <SelectItem value="flowra">Flowra</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select
+                    name="application"
+                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                  >
+                    {[
+                      "Portal",
+                      "CRM",
+                      "Flowra",
+                      "Daily Operation",
+                      "ITQM",
+                      "Intranet",
+                    ].map((application) => (
+                      <option key={application}>{application}</option>
+                    ))}
+                  </select>
                 </label>
                 <label className="block text-sm font-medium">
                   Environment
-                  <Select defaultValue="uat">
-                    <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="uat">UAT</SelectItem>
-                      <SelectItem value="staging">Staging</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select
+                    name="environment"
+                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                  >
+                    <option>UAT</option>
+                    <option>STAGING</option>
+                  </select>
                 </label>
               </div>
               <label className="block text-sm font-medium">
                 Release
-                <Input className="mt-1.5" defaultValue="v1.9.0" />
+                <Input
+                  name="release"
+                  className="mt-1.5"
+                  defaultValue="v1.9.0"
+                  required
+                />
               </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm font-medium">
+                  Owner
+                  <Input
+                    name="owner"
+                    className="mt-1.5"
+                    defaultValue="Andi Pratama"
+                    required
+                  />
+                </label>
+                <label className="block text-sm font-medium">
+                  Target date
+                  <Input
+                    name="targetDate"
+                    className="mt-1.5"
+                    defaultValue="Sep 03, 2026"
+                    required
+                  />
+                </label>
+              </div>
               <label className="block text-sm font-medium">
                 Description
                 <textarea
@@ -195,13 +279,51 @@ export function PlanList() {
                   variant="outline"
                   size="sm"
                   className="mt-3"
+                  onClick={() => setScenarioBrowserOpen((open) => !open)}
                 >
-                  Browse Scenario Library
+                  {scenarioBrowserOpen
+                    ? "Hide Scenario Library"
+                    : "Browse Scenario Library"}
                 </Button>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {selectedScenarioIds.length} selected
+                </p>
               </div>
+              {scenarioBrowserOpen ? (
+                <div className="max-h-56 divide-y overflow-y-auto rounded-md border">
+                  {scenarioSeed.map((scenario) => (
+                    <label
+                      key={scenario.id}
+                      className="flex cursor-pointer items-start gap-2 p-3 text-left hover:bg-accent"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedScenarioIdSet.has(scenario.id)}
+                        onChange={(event) =>
+                          setSelectedScenarioIds((current) =>
+                            event.target.checked
+                              ? [...current, scenario.id]
+                              : current.filter((id) => id !== scenario.id)
+                          )
+                        }
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium">
+                          {scenario.title}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {scenario.application} · {scenario.module} /{" "}
+                          {scenario.feature}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <SheetFooter className="border-t">
-              <Button type="button" onClick={() => setCreateOpen(false)}>
+              <Button type="submit" disabled={selectedScenarioIds.length === 0}>
                 Create draft plan
               </Button>
               <Button

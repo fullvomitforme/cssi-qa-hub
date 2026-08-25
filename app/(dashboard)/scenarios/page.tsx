@@ -1,12 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { PlusIcon } from "lucide-react"
 import { z } from "zod"
 
-import { ScenarioFilters } from "@/components/features/scenarios/scenario-filters"
-import { ScenarioTable } from "@/components/features/scenarios/scenario-table"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { ScenarioWorkspace } from "@/components/features/scenarios/scenario-workspace"
+import { scenarioSeed } from "@/lib/data/seed"
 import { listScenarios } from "@/services/scenarios"
 import { requireUser } from "@/services/auth"
 import type { Priority, TestType } from "@/types/qa"
@@ -18,6 +14,8 @@ const querySchema = z.object({
   application: z
     .enum(["portal", "crm", "flowra", "daily-operation", "itqm", "intranet"])
     .optional(),
+  module: z.string().trim().max(80).optional(),
+  feature: z.string().trim().max(80).optional(),
   type: z
     .enum([
       "HAPPY_PATH",
@@ -33,6 +31,7 @@ const querySchema = z.object({
     ])
     .optional(),
   priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
+  updated: z.enum(["3d", "7d", "30d"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
 })
 
@@ -49,11 +48,17 @@ export default async function ScenariosPage({
       typeof raw.application === "string" && raw.application
         ? raw.application
         : undefined,
+    module:
+      typeof raw.module === "string" && raw.module ? raw.module : undefined,
+    feature:
+      typeof raw.feature === "string" && raw.feature ? raw.feature : undefined,
     type: typeof raw.type === "string" && raw.type ? raw.type : undefined,
     priority:
       typeof raw.priority === "string" && raw.priority
         ? raw.priority
         : undefined,
+    updated:
+      typeof raw.updated === "string" && raw.updated ? raw.updated : undefined,
     page: typeof raw.page === "string" ? raw.page : undefined,
   })
   const query = parsed.success ? parsed.data : querySchema.parse({})
@@ -72,60 +77,32 @@ export default async function ScenariosPage({
     const params = new URLSearchParams()
     if (query.search) params.set("search", query.search)
     if (query.application) params.set("application", query.application)
+    if (query.module) params.set("module", query.module)
+    if (query.feature) params.set("feature", query.feature)
     if (query.type) params.set("type", query.type)
     if (query.priority) params.set("priority", query.priority)
+    if (query.updated) params.set("updated", query.updated)
     params.set("page", String(page))
     return `/scenarios?${params.toString()}`
   }
 
   return (
-    <main className="flex min-w-0 flex-col gap-4 p-4 lg:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Test Scenarios</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Reusable test definitions across all six applications.
-          </p>
-        </div>
-        {profile.role !== "QA_TESTER" ? (
-          <Button size="sm">
-            <PlusIcon data-icon="inline-start" />
-            New Scenario
-          </Button>
-        ) : null}
-      </div>
-      <Card className="min-w-0">
-        <ScenarioFilters values={query} />
-        <CardContent className="px-0">
-          <ScenarioTable scenarios={result.items} />
-        </CardContent>
-        <div className="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground">
-          <span>{result.total.toLocaleString()} scenarios</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="xs"
-              render={<Link href={pageHref(Math.max(1, query.page - 1))} />}
-              disabled={query.page <= 1}
-            >
-              Previous
-            </Button>
-            <span>
-              Page {query.page} of {pageCount}
-            </span>
-            <Button
-              variant="outline"
-              size="xs"
-              render={
-                <Link href={pageHref(Math.min(pageCount, query.page + 1))} />
-              }
-              disabled={query.page >= pageCount}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </Card>
-    </main>
+    <ScenarioWorkspace
+      initialScenarios={result.items}
+      initialTotal={result.total}
+      page={query.page}
+      pageCount={pageCount}
+      previousHref={pageHref(Math.max(1, query.page - 1))}
+      nextHref={pageHref(Math.min(pageCount, query.page + 1))}
+      filters={query}
+      modules={Array.from(
+        new Set(scenarioSeed.map((item) => item.module))
+      ).sort()}
+      features={Array.from(
+        new Set(scenarioSeed.map((item) => item.feature))
+      ).sort()}
+      canCreate={profile.role !== "QA_TESTER"}
+      initialCreateOpen={raw.create === "true"}
+    />
   )
 }

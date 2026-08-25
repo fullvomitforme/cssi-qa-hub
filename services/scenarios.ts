@@ -2,6 +2,7 @@ import "server-only"
 
 import { scenarioSeed } from "@/lib/data/seed"
 import { env, isSupabaseConfigured } from "@/lib/env"
+import { filterScenarios } from "@/lib/scenario-filters"
 import { createClient } from "@/lib/supabase/server"
 import type {
   Priority,
@@ -30,27 +31,7 @@ export async function listScenarios(
   query: ScenarioQuery
 ): Promise<ScenarioPage> {
   if (env.demoMode && !isSupabaseConfigured()) {
-    const search = query.search?.toLocaleLowerCase()
-    const filtered = scenarioSeed.filter((scenario) => {
-      const matchesSearch =
-        !search ||
-        [
-          scenario.title,
-          scenario.description,
-          scenario.module,
-          scenario.feature,
-        ]
-          .join(" ")
-          .toLocaleLowerCase()
-          .includes(search)
-      return (
-        matchesSearch &&
-        (!query.application ||
-          scenario.applicationSlug === query.application) &&
-        (!query.type || scenario.type === query.type) &&
-        (!query.priority || scenario.priority === query.priority)
-      )
-    })
+    const filtered = filterScenarios(scenarioSeed, query)
     const start = (query.page - 1) * query.pageSize
     return {
       items: filtered.slice(start, start + query.pageSize),

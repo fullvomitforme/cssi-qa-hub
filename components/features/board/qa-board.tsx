@@ -26,6 +26,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -65,9 +66,14 @@ function WorkItemCard({
     <article
       draggable
       onDragStart={onDragStart}
-      onClick={onOpen}
-      className="group cursor-pointer rounded-md border bg-background p-2.5 transition-colors hover:border-foreground/20 hover:bg-accent"
+      className="group relative rounded-md border bg-background p-2.5 transition-colors hover:border-foreground/20 hover:bg-accent"
     >
+      <button
+        type="button"
+        aria-label={`Open ${item.application} ${item.title}`}
+        onClick={onOpen}
+        className="absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+      />
       <div className="flex items-start gap-1">
         <GripVerticalIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
         <div className="min-w-0 flex-1">
@@ -102,9 +108,18 @@ function WorkItemCard({
   )
 }
 
-export function QABoard() {
+export function QABoard({
+  initialItemId,
+  initialCreateOpen = false,
+}: {
+  initialItemId?: string
+  initialCreateOpen?: boolean
+}) {
   const [items, setItems] = useState<BoardItem[]>(initialBoardItems)
-  const [selected, setSelected] = useState<BoardItem | null>(null)
+  const [selected, setSelected] = useState<BoardItem | null>(
+    () => initialBoardItems.find((item) => item.id === initialItemId) ?? null
+  )
+  const [createOpen, setCreateOpen] = useState(initialCreateOpen)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [application, setApplication] = useState("all")
@@ -133,6 +148,32 @@ export function QABoard() {
     setSelected((current) =>
       current?.id === id ? { ...current, status } : current
     )
+  }
+
+  function createWorkItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const scenarioCount = Number(form.get("scenarios")) || 1
+    const item: BoardItem = {
+      id: `work-${Date.now()}`,
+      title: String(form.get("title")),
+      application: String(form.get("application")),
+      feature: String(form.get("feature")),
+      release: "v1.9.0",
+      environment: "UAT",
+      priority: String(form.get("priority")) as BoardItem["priority"],
+      assignee: String(form.get("assignee")),
+      due: String(form.get("due")),
+      scenarios: scenarioCount,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      untested: scenarioCount,
+      status: "BACKLOG",
+    }
+    setItems((current) => [item, ...current])
+    setCreateOpen(false)
+    setSelected(item)
   }
 
   return (
@@ -186,7 +227,9 @@ export function QABoard() {
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm">Add work item</Button>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          Add work item
+        </Button>
       </div>
 
       <div className="qa-scrollbar overflow-x-auto">
@@ -363,6 +406,105 @@ export function QABoard() {
               </div>
             </>
           ) : null}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader className="border-b">
+            <SheetTitle>Add work item</SheetTitle>
+            <SheetDescription>
+              Add a feature-level QA item to the backlog for this local session.
+            </SheetDescription>
+          </SheetHeader>
+          <form className="flex flex-1 flex-col" onSubmit={createWorkItem}>
+            <div className="grid flex-1 gap-4 p-4">
+              <label className="text-sm font-medium">
+                Title
+                <Input name="title" className="mt-1.5" required />
+              </label>
+              <label className="text-sm font-medium">
+                Feature
+                <Input name="feature" className="mt-1.5" required />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-sm font-medium">
+                  Application
+                  <select
+                    name="application"
+                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                  >
+                    {[
+                      "Portal",
+                      "CRM",
+                      "Flowra",
+                      "Daily Operation",
+                      "ITQM",
+                      "Intranet",
+                    ].map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-medium">
+                  Priority
+                  <select
+                    name="priority"
+                    defaultValue="P2"
+                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                  >
+                    {(["P0", "P1", "P2", "P3"] as const).map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <label className="text-sm font-medium">
+                  Assignee
+                  <Input
+                    name="assignee"
+                    defaultValue="Andi"
+                    className="mt-1.5"
+                    required
+                  />
+                </label>
+                <label className="text-sm font-medium">
+                  Due
+                  <Input
+                    name="due"
+                    defaultValue="Aug 30"
+                    className="mt-1.5"
+                    required
+                  />
+                </label>
+                <label className="text-sm font-medium">
+                  Scenarios
+                  <Input
+                    name="scenarios"
+                    type="number"
+                    min={1}
+                    defaultValue={1}
+                    className="mt-1.5"
+                    required
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                New work starts in Backlog for release v1.9.0 on UAT.
+              </p>
+            </div>
+            <SheetFooter className="border-t">
+              <Button type="submit">Add to backlog</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+              >
+                Cancel
+              </Button>
+            </SheetFooter>
+          </form>
         </SheetContent>
       </Sheet>
     </>

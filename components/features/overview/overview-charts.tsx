@@ -37,6 +37,8 @@ export function StatusDistributionChart({
 }: {
   data: StatusDistributionItem[]
 }) {
+  const tested = data.reduce((total, item) => total + item.count, 0)
+
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
       <ChartContainer
@@ -65,7 +67,7 @@ export function StatusDistributionChart({
             dominantBaseline="middle"
             className="fill-foreground text-lg font-semibold"
           >
-            842
+            {tested.toLocaleString()}
           </text>
           <text
             x="50%"

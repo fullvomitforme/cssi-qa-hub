@@ -1,6 +1,20 @@
-# Next.js template
+# QA Hub
 
-This is a Next.js template with shadcn/ui.
+Mock-driven frontend for KBVS manual QA and release-readiness workflows.
+
+## Frontend demo mode
+
+Supabase integration is intentionally deferred. Run the application and its
+production build explicitly in demo mode:
+
+```bash
+bun run dev:demo
+bun run build:demo
+```
+
+Copy `.env.example` to `.env.local` if you prefer to keep demo mode enabled for
+all local commands. Leave the Supabase variables unset while working on the
+mock frontend.
 
 ## Adding components
 

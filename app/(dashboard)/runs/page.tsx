@@ -4,7 +4,12 @@ import { RunList } from "@/components/features/runs/run-list"
 
 export const metadata: Metadata = { title: "Test Runs" }
 
-export default function RunsPage() {
+export default async function RunsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ create?: string | string[] }>
+}) {
+  const query = await searchParams
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -13,7 +18,7 @@ export default function RunsPage() {
           Track active execution cycles, builds, and release readiness.
         </p>
       </div>
-      <RunList />
+      <RunList initialCreateOpen={query.create === "true"} />
     </main>
   )
 }

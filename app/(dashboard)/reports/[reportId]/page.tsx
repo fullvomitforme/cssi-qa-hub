@@ -1,12 +1,31 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowLeftIcon, DownloadIcon, PrinterIcon } from "lucide-react"
+import { notFound } from "next/navigation"
+import { ArrowLeftIcon } from "lucide-react"
 
+import { PrintReportButton } from "@/components/features/reports/print-report-button"
 import { ReportPreview } from "@/components/features/reports/report-preview"
 import { Button } from "@/components/ui/button"
+import { getReportDetail } from "@/lib/data/product-seed"
 
-export const metadata: Metadata = { title: "QA-PORTAL-2026-0081" }
-export default function ReportPreviewPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ reportId: string }>
+}): Promise<Metadata> {
+  const { reportId } = await params
+  return { title: getReportDetail(reportId)?.number ?? "QA Report" }
+}
+
+export default async function ReportPreviewPage({
+  params,
+}: {
+  params: Promise<{ reportId: string }>
+}) {
+  const { reportId } = await params
+  const report = getReportDetail(reportId)
+  if (!report) notFound()
+
   return (
     <main className="min-w-0 bg-muted/30 pb-10">
       <div className="report-toolbar sticky top-12 z-10 flex items-center gap-2 border-b bg-background px-4 py-2 lg:px-6">
@@ -19,22 +38,15 @@ export default function ReportPreviewPage() {
           <ArrowLeftIcon />
         </Button>
         <div>
-          <p className="text-sm font-medium">QA-PORTAL-2026-0081</p>
+          <p className="text-sm font-medium">{report.number}</p>
           <p className="text-xs text-muted-foreground">Final report preview</p>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm">
-            <PrinterIcon data-icon="inline-start" />
-            Print
-          </Button>
-          <Button size="sm" disabled>
-            <DownloadIcon data-icon="inline-start" />
-            PDF coming later
-          </Button>
+          <PrintReportButton />
         </div>
       </div>
       <div className="p-4 lg:p-8">
-        <ReportPreview />
+        <ReportPreview report={report} />
       </div>
     </main>
   )

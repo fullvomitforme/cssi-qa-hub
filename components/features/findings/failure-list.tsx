@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { BugIcon, ExternalLinkIcon, SearchIcon } from "lucide-react"
 
 import { SeverityBadge } from "@/components/domain/severity-badge"
@@ -28,21 +29,88 @@ type Failure = (typeof failureItems)[number]
 
 export function FailureList() {
   const [selected, setSelected] = useState<Failure | null>(null)
+  const [search, setSearch] = useState("")
+  const [application, setApplication] = useState("ALL")
+  const [severity, setSeverity] = useState("ALL")
+  const [status, setStatus] = useState("ALL")
+  const [retest, setRetest] = useState("ALL")
+  const filteredFailures = failureItems.filter((failure) => {
+    const needle = search.trim().toLocaleLowerCase()
+    return (
+      (!needle ||
+        `${failure.scenario} ${failure.application} ${failure.feature} ${failure.bugReference}`
+          .toLocaleLowerCase()
+          .includes(needle)) &&
+      (application === "ALL" || failure.application === application) &&
+      (severity === "ALL" || failure.severity === severity) &&
+      (status === "ALL" || failure.status === status) &&
+      (retest === "ALL" || failure.retestStatus === retest)
+    )
+  })
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <div className="relative max-w-80 flex-1">
           <SearchIcon className="absolute top-2 left-2.5 size-4 text-muted-foreground" />
-          <Input placeholder="Search failures…" className="pl-8" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search failures…"
+            className="pl-8"
+          />
         </div>
-        <Button variant="outline" size="sm">
-          All applications
-        </Button>
-        <Button variant="outline" size="sm">
-          Open failures
-        </Button>
+        <select
+          value={application}
+          onChange={(event) => setApplication(event.target.value)}
+          aria-label="Filter failures by application"
+          className="h-8 rounded-lg border bg-background px-2 text-sm"
+        >
+          <option value="ALL">All applications</option>
+          {Array.from(
+            new Set(failureItems.map((item) => item.application))
+          ).map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        <select
+          value={severity}
+          onChange={(event) => setSeverity(event.target.value)}
+          aria-label="Filter failures by severity"
+          className="h-8 rounded-lg border bg-background px-2 text-sm"
+        >
+          <option value="ALL">All severities</option>
+          {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+          aria-label="Filter failures by status"
+          className="h-8 rounded-lg border bg-background px-2 text-sm"
+        >
+          <option value="ALL">All statuses</option>
+          {Array.from(new Set(failureItems.map((item) => item.status))).map(
+            (item) => (
+              <option key={item}>{item.replaceAll("_", " ")}</option>
+            )
+          )}
+        </select>
+        <select
+          value={retest}
+          onChange={(event) => setRetest(event.target.value)}
+          aria-label="Filter failures by retest status"
+          className="h-8 rounded-lg border bg-background px-2 text-sm"
+        >
+          <option value="ALL">All retest states</option>
+          {Array.from(
+            new Set(failureItems.map((item) => item.retestStatus))
+          ).map((item) => (
+            <option key={item}>{item.replaceAll("_", " ")}</option>
+          ))}
+        </select>
         <span className="ml-auto text-xs text-muted-foreground">
-          5 actionable findings
+          {filteredFailures.length} findings
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -61,7 +129,7 @@ export function FailureList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {failureItems.map((failure) => (
+            {filteredFailures.map((failure) => (
               <TableRow
                 key={failure.id}
                 onClick={() => setSelected(failure)}
@@ -194,7 +262,15 @@ export function FailureList() {
                     </li>
                   </ol>
                 </section>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={
+                    <Link
+                      href={`/runs/${selected.runId}?execution=${selected.executionId}`}
+                    />
+                  }
+                >
                   <ExternalLinkIcon data-icon="inline-start" />
                   Open original execution
                 </Button>

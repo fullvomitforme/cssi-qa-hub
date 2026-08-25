@@ -120,7 +120,7 @@ export const overviewSeed: OverviewData = {
   ],
   recentRuns: [
     {
-      id: "run-portal",
+      id: "run-portal-regression",
       name: "Portal Regression v1.9.0",
       environment: "UAT",
       build: "a829d41",
@@ -128,7 +128,7 @@ export const overviewSeed: OverviewData = {
       progress: 65,
     },
     {
-      id: "run-crm",
+      id: "run-crm-regression",
       name: "CRM Regression v1.9.0",
       environment: "UAT",
       build: "a829d41",
@@ -136,7 +136,7 @@ export const overviewSeed: OverviewData = {
       progress: 42,
     },
     {
-      id: "run-flowra",
+      id: "run-flowra-regression",
       name: "Flowra Regression v1.9.0",
       environment: "UAT",
       build: "a829d41",
@@ -144,7 +144,7 @@ export const overviewSeed: OverviewData = {
       progress: 70,
     },
     {
-      id: "run-itqm",
+      id: "run-itqm-smoke",
       name: "ITQM Smoke Test v1.9.0",
       environment: "UAT",
       build: "a829d41",
@@ -152,7 +152,7 @@ export const overviewSeed: OverviewData = {
       progress: 100,
     },
     {
-      id: "run-daily",
+      id: "run-daily-regression",
       name: "Daily Ops Regression v1.9.0",
       environment: "UAT",
       build: "a829d41",

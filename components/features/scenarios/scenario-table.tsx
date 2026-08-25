@@ -183,12 +183,19 @@ export function ScenarioTable({ scenarios }: { scenarios: ScenarioSummary[] }) {
                     </dd>
                   </div>
                 </dl>
-                <Link
-                  href={`/scenarios/${selected.id}`}
-                  className="inline-flex h-8 items-center rounded-lg border px-3 text-sm font-medium hover:bg-accent"
-                >
-                  Open full scenario
-                </Link>
+                {selected.id.startsWith("local-scenario-") ? (
+                  <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                    Local draft details remain in this sheet until persistence
+                    is added.
+                  </p>
+                ) : (
+                  <Link
+                    href={`/scenarios/${selected.id}`}
+                    className="inline-flex h-8 items-center rounded-lg border px-3 text-sm font-medium hover:bg-accent"
+                  >
+                    Open full scenario
+                  </Link>
+                )}
               </div>
             </>
           ) : null}

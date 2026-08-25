@@ -56,8 +56,11 @@ export interface ScenarioDetail extends ScenarioSummary {
 export interface ScenarioQuery {
   search?: string
   application?: string
+  module?: string
+  feature?: string
   type?: TestType
   priority?: Priority
+  updated?: "3d" | "7d" | "30d"
   page: number
   pageSize: number
 }

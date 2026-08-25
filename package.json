@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:demo": "NEXT_PUBLIC_QA_DEMO_MODE=true next dev",
     "build": "next build",
+    "build:demo": "NEXT_PUBLIC_QA_DEMO_MODE=true next build",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
