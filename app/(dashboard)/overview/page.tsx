@@ -15,11 +15,13 @@ import { TopFailuresTable } from "@/components/features/overview/top-failures-ta
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getOverviewData } from "@/services/overview"
+import { shouldUseDemoData } from "@/lib/env"
 
 export const metadata: Metadata = { title: "Overview" }
 
 export default async function OverviewPage() {
   const data = await getOverviewData()
+  const demoMode = shouldUseDemoData()
 
   return (
     <main className="flex min-w-0 flex-col gap-4 p-4 lg:p-6">
@@ -35,31 +37,43 @@ export default async function OverviewPage() {
             <span className="text-muted-foreground">Release</span>
             <select
               aria-label="Release"
-              defaultValue="v1.9.0"
+              defaultValue={demoMode ? "v1.9.0" : "All releases"}
               disabled
-              title="The current mock dashboard contains one v1.9.0 snapshot."
+              title={
+                demoMode
+                  ? "The current mock dashboard contains one v1.9.0 snapshot."
+                  : "The dashboard RPC currently returns all persisted releases."
+              }
               className="bg-transparent font-medium"
             >
-              <option>v1.9.0</option>
+              <option>{demoMode ? "v1.9.0" : "All releases"}</option>
             </select>
           </label>
           <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
             <span className="text-muted-foreground">Environment</span>
             <select
               aria-label="Environment"
-              defaultValue="UAT"
+              defaultValue={demoMode ? "UAT" : "All environments"}
               disabled
-              title="The current mock dashboard contains one UAT snapshot."
+              title={
+                demoMode
+                  ? "The current mock dashboard contains one UAT snapshot."
+                  : "The dashboard RPC currently returns all persisted environments."
+              }
               className="bg-transparent font-medium"
             >
-              <option>UAT</option>
+              <option>{demoMode ? "UAT" : "All environments"}</option>
             </select>
           </label>
           <Button
             variant="outline"
             size="sm"
             disabled
-            title="The mock snapshot covers Aug 19–Aug 25, 2026."
+            title={
+              demoMode
+                ? "The mock snapshot covers Aug 19–Aug 25, 2026."
+                : "Date filtering is not exposed by the deployed dashboard RPC."
+            }
           >
             <CalendarDaysIcon data-icon="inline-start" />
             Aug 19 – Aug 25, 2026
@@ -67,7 +81,11 @@ export default async function OverviewPage() {
           <Button
             variant="inverse"
             size="sm"
-            render={<Link href="/reports/QA-PORTAL-2026-0081" />}
+            render={
+              <Link
+                href={demoMode ? "/reports/QA-PORTAL-2026-0081" : "/reports"}
+              />
+            }
           >
             <FileOutputIcon data-icon="inline-start" />
             Generate Report
