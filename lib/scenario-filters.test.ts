@@ -6,8 +6,8 @@ import { filterScenarios } from "@/lib/scenario-filters"
 describe("filterScenarios", () => {
   it("filters by module and feature", () => {
     const result = filterScenarios(scenarioSeed, {
-      module: "Authentication",
-      feature: "Login",
+      module: "authentication",
+      feature: "login",
     })
 
     expect(result.map((scenario) => scenario.title)).toEqual([

@@ -4,43 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 
+import { createScenarioAction } from "@/app/actions/scenarios"
 import { ScenarioFilters } from "@/components/features/scenarios/scenario-filters"
+import { ScenarioFormSheet } from "@/components/features/scenarios/scenario-form-sheet"
 import { ScenarioTable } from "@/components/features/scenarios/scenario-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
-import type { Priority, ScenarioSummary, TestType } from "@/types/qa"
-
-const applicationSlugs: Record<string, string> = {
-  Portal: "portal",
-  CRM: "crm",
-  Flowra: "flowra",
-  "Daily Operation": "daily-operation",
-  ITQM: "itqm",
-  Intranet: "intranet",
-}
-
-const testTypes: TestType[] = [
-  "HAPPY_PATH",
-  "VALIDATION",
-  "NEGATIVE",
-  "PERMISSION",
-  "EDGE_CASE",
-  "INTEGRATION",
-  "REGRESSION",
-  "RESPONSIVE",
-  "ACCESSIBILITY",
-  "PERFORMANCE",
-]
+import type { ScenarioHierarchy, ScenarioSummary } from "@/types/qa"
 
 type FilterValues = {
   search?: string
@@ -53,59 +23,77 @@ type FilterValues = {
 }
 
 export function ScenarioWorkspace({
+  canCreate,
+  filters,
+  hierarchy,
+  initialCreateOpen,
   initialScenarios,
   initialTotal,
+  isDemoMode,
+  nextHref,
   page,
   pageCount,
   previousHref,
-  nextHref,
-  filters,
-  modules,
-  features,
-  canCreate,
-  initialCreateOpen,
 }: {
+  canCreate: boolean
+  filters: FilterValues
+  hierarchy: ScenarioHierarchy
+  initialCreateOpen: boolean
   initialScenarios: ScenarioSummary[]
   initialTotal: number
+  isDemoMode: boolean
+  nextHref: string
   page: number
   pageCount: number
   previousHref: string
-  nextHref: string
-  filters: FilterValues
-  modules: string[]
-  features: string[]
-  canCreate: boolean
-  initialCreateOpen: boolean
 }) {
   const [scenarios, setScenarios] = useState(initialScenarios)
   const [createdCount, setCreatedCount] = useState(0)
   const [createOpen, setCreateOpen] = useState(initialCreateOpen)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  function createScenario(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const application = String(form.get("application"))
-    const tags = String(form.get("tags"))
-      .split(",")
-      .map((tag) => tag.trim().toLocaleLowerCase())
-      .filter(Boolean)
+  function createLocalScenario(formValues: FormData) {
+    const application = hierarchy.applications.find(
+      (item) => item.id === String(formValues.get("applicationId"))
+    )
+    const selectedModule = hierarchy.modules.find(
+      (item) => item.id === String(formValues.get("moduleId"))
+    )
+    const feature = hierarchy.features.find(
+      (item) => item.id === String(formValues.get("featureId"))
+    )
+
+    if (!application || !selectedModule || !feature) {
+      return
+    }
+
+    const steps = JSON.parse(String(formValues.get("steps") ?? "[]")) as Array<{
+      instruction: string
+      expectedResult: string
+    }>
+    const tags = JSON.parse(String(formValues.get("tags") ?? "[]")) as string[]
+
     const scenario: ScenarioSummary = {
       id: `local-scenario-${Date.now()}`,
-      application,
-      applicationSlug: applicationSlugs[application],
-      module: String(form.get("module")),
-      feature: String(form.get("feature")),
-      title: String(form.get("title")),
-      description: String(form.get("description")),
-      priority: String(form.get("priority")) as Priority,
-      type: String(form.get("type")) as TestType,
+      application: application.name,
+      applicationSlug: application.slug,
+      module: selectedModule.name,
+      feature: feature.name,
+      title: String(formValues.get("title") ?? ""),
+      description: String(formValues.get("description") ?? ""),
+      priority: String(
+        formValues.get("priority")
+      ) as ScenarioSummary["priority"],
+      type: String(formValues.get("type")) as ScenarioSummary["type"],
       tags,
-      stepCount: Number(form.get("stepCount")) || 1,
+      stepCount: steps.length,
       updatedAt: new Date().toISOString(),
     }
+
     setScenarios((current) => [scenario, ...current])
     setCreatedCount((count) => count + 1)
     setCreateOpen(false)
+    setNotice("Local demo draft created in this browser session.")
   }
 
   return (
@@ -124,12 +112,15 @@ export function ScenarioWorkspace({
           </Button>
         ) : null}
       </div>
+
+      {notice ? (
+        <p className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm text-success">
+          {notice}
+        </p>
+      ) : null}
+
       <Card className="min-w-0">
-        <ScenarioFilters
-          values={filters}
-          modules={modules}
-          features={features}
-        />
+        <ScenarioFilters hierarchy={hierarchy} values={filters} />
         <CardContent className="px-0">
           <ScenarioTable scenarios={scenarios} />
         </CardContent>
@@ -161,111 +152,44 @@ export function ScenarioWorkspace({
         </div>
       </Card>
 
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent className="w-full sm:max-w-xl">
-          <SheetHeader className="border-b">
-            <SheetTitle>New Test Scenario</SheetTitle>
-            <SheetDescription>
-              Add a local scenario draft to the current table.
-            </SheetDescription>
-          </SheetHeader>
-          <form className="flex flex-1 flex-col" onSubmit={createScenario}>
-            <div className="qa-scrollbar grid flex-1 gap-4 overflow-y-auto p-4">
-              <label className="text-sm font-medium">
-                Scenario title
-                <Input name="title" className="mt-1.5" required />
-              </label>
-              <label className="text-sm font-medium">
-                Description
-                <Textarea name="description" className="mt-1.5" required />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm font-medium">
-                  Application
-                  <select
-                    name="application"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {Object.keys(applicationSlugs).map((application) => (
-                      <option key={application}>{application}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm font-medium">
-                  Priority
-                  <select
-                    name="priority"
-                    defaultValue="P2"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {(["P0", "P1", "P2", "P3"] as const).map((priority) => (
-                      <option key={priority}>{priority}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm font-medium">
-                  Module
-                  <Input name="module" className="mt-1.5" required />
-                </label>
-                <label className="text-sm font-medium">
-                  Feature
-                  <Input name="feature" className="mt-1.5" required />
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm font-medium">
-                  Test type
-                  <select
-                    name="type"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {testTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm font-medium">
-                  Step count
-                  <Input
-                    name="stepCount"
-                    type="number"
-                    min={1}
-                    defaultValue={1}
-                    className="mt-1.5"
-                    required
-                  />
-                </label>
-              </div>
-              <label className="text-sm font-medium">
-                Tags
-                <Input
-                  name="tags"
-                  className="mt-1.5"
-                  placeholder="smoke, regression"
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Local drafts remain in this browser session and are not
-                persisted.
-              </p>
-            </div>
-            <SheetFooter className="border-t">
-              <Button type="submit">Create local scenario</Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                Cancel
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
+      {isDemoMode ? (
+        <ScenarioFormSheet
+          action={async (state, payload) => {
+            createLocalScenario(payload)
+            return {
+              ...state,
+              status: "success",
+              message: "Local draft created.",
+              scenarioId: `local-scenario-${Date.now()}`,
+            }
+          }}
+          description="Create a local draft that exists only in this browser session."
+          hierarchy={hierarchy}
+          mode="create"
+          onOpenChange={setCreateOpen}
+          onSuccess={() => setCreateOpen(false)}
+          open={createOpen}
+          submitLabel="Create local scenario"
+          title="New Test Scenario"
+        />
+      ) : (
+        <ScenarioFormSheet
+          action={createScenarioAction}
+          description="Create a persisted scenario with ordered steps and reusable tags."
+          hierarchy={hierarchy}
+          mode="create"
+          onOpenChange={setCreateOpen}
+          onSuccess={(scenarioId) => {
+            setCreateOpen(false)
+            setNotice(
+              `Scenario created. Open /scenarios/${scenarioId} to review details.`
+            )
+          }}
+          open={createOpen}
+          submitLabel="Create scenario"
+          title="New Test Scenario"
+        />
+      )}
     </main>
   )
 }

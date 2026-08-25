@@ -2,29 +2,96 @@ import "server-only"
 
 import { scenarioSeed } from "@/lib/data/seed"
 import { shouldUseDemoData } from "@/lib/env"
+import {
+  buildDemoScenarioHierarchy,
+  mapApplicationRow,
+  mapFeatureRow,
+  mapModuleRow,
+  mapScenarioDetailRow,
+  mapScenarioSummaryRow,
+  type ApplicationRow,
+  type FeatureRow,
+  type ModuleRow,
+  type ScenarioDetailRow,
+  type ScenarioSummaryRow,
+} from "@/lib/scenario-adapters"
 import { filterScenarios } from "@/lib/scenario-filters"
 import { createClient } from "@/lib/supabase/server"
 import type {
-  Priority,
   ScenarioDetail,
+  ScenarioFormValues,
+  ScenarioHierarchy,
   ScenarioPage,
   ScenarioQuery,
-  ScenarioSummary,
-  TestType,
 } from "@/types/qa"
 
-interface ScenarioRow {
-  id: string
-  title: string
-  description: string
-  priority: Priority
-  test_type: TestType
-  updated_at: string
-  applications: { name: string; slug: string } | null
-  modules: { name: string } | null
-  features: { name: string } | null
-  scenario_tags: Array<{ tag: string }>
-  test_steps: Array<{ id: string }>
+export class ScenarioMutationError extends Error {
+  constructor(
+    message: string,
+    readonly code:
+      | "FORBIDDEN"
+      | "NOT_FOUND"
+      | "CONFLICT"
+      | "VALIDATION"
+      | "UNKNOWN" = "UNKNOWN"
+  ) {
+    super(message)
+  }
+}
+
+export async function listScenarioHierarchy(): Promise<ScenarioHierarchy> {
+  if (shouldUseDemoData()) {
+    return buildDemoScenarioHierarchy()
+  }
+
+  const supabase = await createClient()
+  const [applicationsResult, modulesResult, featuresResult] = await Promise.all(
+    [
+      supabase
+        .from("applications")
+        .select("id, name, slug")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("modules")
+        .select("id, name, slug, application_id, applications!inner(slug)")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("features")
+        .select(
+          "id, name, slug, module_id, modules!inner(slug, application_id, applications!inner(slug))"
+        )
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+    ]
+  )
+
+  if (applicationsResult.error) {
+    throw new Error(
+      `Unable to load scenario applications: ${applicationsResult.error.message}`
+    )
+  }
+  if (modulesResult.error) {
+    throw new Error(
+      `Unable to load scenario modules: ${modulesResult.error.message}`
+    )
+  }
+  if (featuresResult.error) {
+    throw new Error(
+      `Unable to load scenario features: ${featuresResult.error.message}`
+    )
+  }
+
+  return {
+    applications: (applicationsResult.data as ApplicationRow[]).map(
+      mapApplicationRow
+    ),
+    modules: (modulesResult.data as unknown as ModuleRow[]).map(mapModuleRow),
+    features: (featuresResult.data as unknown as FeatureRow[]).map(
+      mapFeatureRow
+    ),
+  }
 }
 
 export async function listScenarios(
@@ -46,7 +113,7 @@ export async function listScenarios(
   let request = supabase
     .from("test_scenarios")
     .select(
-      "id,title,description,priority,test_type,updated_at,applications!inner(name,slug),modules!inner(name),features!inner(name),scenario_tags(tag),test_steps(id)",
+      "id,title,description,priority,test_type,updated_at,applications!inner(name,slug),modules!inner(name,slug),features!inner(name,slug),scenario_tags(tag),test_steps(id)",
       { count: "exact" }
     )
     .eq("is_active", true)
@@ -54,32 +121,26 @@ export async function listScenarios(
     .range(start, start + query.pageSize - 1)
 
   if (query.search) request = request.textSearch("search_vector", query.search)
-  if (query.application)
+  if (query.application) {
     request = request.eq("applications.slug", query.application)
+  }
+  if (query.module) request = request.eq("modules.slug", query.module)
+  if (query.feature) request = request.eq("features.slug", query.feature)
   if (query.type) request = request.eq("test_type", query.type)
   if (query.priority) request = request.eq("priority", query.priority)
+  if (query.updated) {
+    const updatedAfter = new Date()
+    updatedAfter.setUTCDate(
+      updatedAfter.getUTCDate() - Number.parseInt(query.updated, 10)
+    )
+    request = request.gte("updated_at", updatedAfter.toISOString())
+  }
 
   const { data, error, count } = await request
   if (error) throw new Error(`Unable to load scenarios: ${error.message}`)
 
-  const rows = data as unknown as ScenarioRow[]
-  const items: ScenarioSummary[] = rows.map((row) => ({
-    id: row.id,
-    application: row.applications?.name ?? "Unknown",
-    applicationSlug: row.applications?.slug ?? "unknown",
-    module: row.modules?.name ?? "Unknown",
-    feature: row.features?.name ?? "Unknown",
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    type: row.test_type,
-    tags: row.scenario_tags.map(({ tag }) => tag),
-    stepCount: row.test_steps.length,
-    updatedAt: row.updated_at,
-  }))
-
   return {
-    items,
+    items: (data as unknown as ScenarioSummaryRow[]).map(mapScenarioSummaryRow),
     total: count ?? 0,
     page: query.page,
     pageSize: query.pageSize,
@@ -95,7 +156,7 @@ export async function getScenario(id: string): Promise<ScenarioDetail | null> {
   const { data, error } = await supabase
     .from("test_scenarios")
     .select(
-      "id,title,description,preconditions,expected_result,priority,test_type,created_at,updated_at,applications!inner(name,slug),modules!inner(name),features!inner(name),scenario_tags(tag),test_steps(position,instruction,expected_result),created_profile:profiles!test_scenarios_created_by_fkey(full_name),updated_profile:profiles!test_scenarios_updated_by_fkey(full_name)"
+      "id,title,description,preconditions,expected_result,priority,test_type,created_at,updated_at,applications!inner(id,name,slug),modules!inner(id,name,slug),features!inner(id,name,slug),scenario_tags(tag),test_steps(id,position,instruction,expected_result),created_profile:profiles!test_scenarios_created_by_fkey(full_name),updated_profile:profiles!test_scenarios_updated_by_fkey(full_name)"
     )
     .eq("id", id)
     .single()
@@ -103,53 +164,80 @@ export async function getScenario(id: string): Promise<ScenarioDetail | null> {
   if (error?.code === "PGRST116") return null
   if (error) throw new Error(`Unable to load scenario: ${error.message}`)
 
-  const row = data as unknown as {
-    id: string
-    title: string
-    description: string
-    preconditions: string
-    expected_result: string
-    priority: Priority
-    test_type: TestType
-    created_at: string
-    updated_at: string
-    applications: { name: string; slug: string }
-    modules: { name: string }
-    features: { name: string }
-    scenario_tags: Array<{ tag: string }>
-    test_steps: Array<{
-      position: number
-      instruction: string
-      expected_result: string | null
-    }>
-    created_profile: { full_name: string }
-    updated_profile: { full_name: string }
+  return mapScenarioDetailRow(data as unknown as ScenarioDetailRow)
+}
+
+function mapMutationError(error: { code?: string; message: string }) {
+  if (error.code === "42501") {
+    return new ScenarioMutationError(
+      "You do not have permission to update test scenarios.",
+      "FORBIDDEN"
+    )
+  }
+  if (error.code === "P0002" || error.code === "PGRST116") {
+    return new ScenarioMutationError("Scenario not found.", "NOT_FOUND")
+  }
+  if (
+    error.code === "23503" ||
+    error.code === "23505" ||
+    error.code === "23514"
+  ) {
+    return new ScenarioMutationError(error.message, "VALIDATION")
   }
 
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    preconditions: row.preconditions,
-    expectedResult: row.expected_result,
-    priority: row.priority,
-    type: row.test_type,
-    application: row.applications.name,
-    applicationSlug: row.applications.slug,
-    module: row.modules.name,
-    feature: row.features.name,
-    tags: row.scenario_tags.map(({ tag }) => tag),
-    steps: row.test_steps
-      .toSorted((a, b) => a.position - b.position)
-      .map((step) => ({
-        position: step.position,
-        instruction: step.instruction,
-        expectedResult: step.expected_result ?? undefined,
-      })),
-    stepCount: row.test_steps.length,
-    createdBy: row.created_profile.full_name,
-    updatedBy: row.updated_profile.full_name,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }
+  return new ScenarioMutationError(error.message, "UNKNOWN")
+}
+
+export async function createScenarioRecord(values: ScenarioFormValues) {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("create_test_scenario", {
+    target_application_id: values.applicationId,
+    target_module_id: values.moduleId,
+    target_feature_id: values.featureId,
+    target_title: values.title,
+    target_description: values.description,
+    target_preconditions: values.preconditions,
+    target_test_type: values.type,
+    target_priority: values.priority,
+    target_expected_result: values.expectedResult,
+    target_steps: values.steps.map((step) => ({
+      id: step.id,
+      instruction: step.instruction,
+      expected_result: step.expectedResult,
+    })),
+    target_tags: values.tags,
+  })
+
+  if (error) throw mapMutationError(error)
+
+  return data as string
+}
+
+export async function updateScenarioRecord(
+  scenarioId: string,
+  values: ScenarioFormValues
+) {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("update_test_scenario", {
+    target_scenario_id: scenarioId,
+    target_application_id: values.applicationId,
+    target_module_id: values.moduleId,
+    target_feature_id: values.featureId,
+    target_title: values.title,
+    target_description: values.description,
+    target_preconditions: values.preconditions,
+    target_test_type: values.type,
+    target_priority: values.priority,
+    target_expected_result: values.expectedResult,
+    target_steps: values.steps.map((step) => ({
+      id: step.id,
+      instruction: step.instruction,
+      expected_result: step.expectedResult,
+    })),
+    target_tags: values.tags,
+  })
+
+  if (error) throw mapMutationError(error)
+
+  return data as string
 }

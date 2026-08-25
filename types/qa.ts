@@ -73,13 +73,21 @@ export interface ScenarioSummary {
   updatedAt: string
 }
 
+export interface ScenarioStep {
+  id?: string
+  position: number
+  instruction: string
+  expectedResult?: string
+}
+
 export interface ScenarioDetail extends ScenarioSummary {
+  applicationId?: string
+  moduleId?: string
+  moduleSlug?: string
+  featureId?: string
+  featureSlug?: string
   preconditions: string
-  steps: Array<{
-    position: number
-    instruction: string
-    expectedResult?: string
-  }>
+  steps: ScenarioStep[]
   expectedResult: string
   createdBy: string
   updatedBy: string
@@ -103,6 +111,54 @@ export interface ScenarioPage {
   total: number
   page: number
   pageSize: number
+}
+
+export interface ScenarioApplicationOption {
+  id: string
+  name: string
+  slug: string
+}
+
+export interface ScenarioModuleOption {
+  id: string
+  applicationId: string
+  applicationSlug: string
+  name: string
+  slug: string
+}
+
+export interface ScenarioFeatureOption {
+  id: string
+  applicationId: string
+  applicationSlug: string
+  moduleId: string
+  moduleSlug: string
+  name: string
+  slug: string
+}
+
+export interface ScenarioHierarchy {
+  applications: ScenarioApplicationOption[]
+  modules: ScenarioModuleOption[]
+  features: ScenarioFeatureOption[]
+}
+
+export interface ScenarioFormValues {
+  applicationId: string
+  moduleId: string
+  featureId: string
+  title: string
+  description: string
+  preconditions: string
+  type: TestType
+  priority: Priority
+  expectedResult: string
+  steps: Array<{
+    id?: string
+    instruction: string
+    expectedResult: string
+  }>
+  tags: string[]
 }
 
 export interface OverviewMetric {

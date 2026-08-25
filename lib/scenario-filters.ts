@@ -1,3 +1,4 @@
+import { slugifyScenarioOption } from "@/lib/scenario-adapters"
 import type { ScenarioSummary } from "@/types/qa"
 
 export type ScenarioFilterValues = {
@@ -38,8 +39,10 @@ export function filterScenarios<T extends ScenarioSummary>(
       matchesSearch &&
       (!filters.application ||
         scenario.applicationSlug === filters.application) &&
-      (!filters.module || scenario.module === filters.module) &&
-      (!filters.feature || scenario.feature === filters.feature) &&
+      (!filters.module ||
+        slugifyScenarioOption(scenario.module) === filters.module) &&
+      (!filters.feature ||
+        slugifyScenarioOption(scenario.feature) === filters.feature) &&
       (!filters.type || scenario.type === filters.type) &&
       (!filters.priority || scenario.priority === filters.priority) &&
       (cutoff === null || new Date(scenario.updatedAt).getTime() >= cutoff)

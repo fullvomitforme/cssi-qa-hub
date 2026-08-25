@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { z } from "zod"
 
 import { ScenarioWorkspace } from "@/components/features/scenarios/scenario-workspace"
-import { scenarioSeed } from "@/lib/data/seed"
+import { shouldUseDemoData } from "@/lib/env"
 import { listScenarios } from "@/services/scenarios"
+import { listScenarioHierarchy } from "@/services/scenarios"
 import { requireUser } from "@/services/auth"
 import type { Priority, TestType } from "@/types/qa"
 
@@ -11,9 +12,7 @@ export const metadata: Metadata = { title: "Test Scenarios" }
 
 const querySchema = z.object({
   search: z.string().trim().max(120).optional(),
-  application: z
-    .enum(["portal", "crm", "flowra", "daily-operation", "itqm", "intranet"])
-    .optional(),
+  application: z.string().trim().max(80).optional(),
   module: z.string().trim().max(80).optional(),
   feature: z.string().trim().max(80).optional(),
   type: z
@@ -62,8 +61,9 @@ export default async function ScenariosPage({
     page: typeof raw.page === "string" ? raw.page : undefined,
   })
   const query = parsed.success ? parsed.data : querySchema.parse({})
-  const [profile, result] = await Promise.all([
+  const [profile, hierarchy, result] = await Promise.all([
     requireUser(),
+    listScenarioHierarchy(),
     listScenarios({
       ...query,
       type: query.type as TestType | undefined,
@@ -95,14 +95,10 @@ export default async function ScenariosPage({
       previousHref={pageHref(Math.max(1, query.page - 1))}
       nextHref={pageHref(Math.min(pageCount, query.page + 1))}
       filters={query}
-      modules={Array.from(
-        new Set(scenarioSeed.map((item) => item.module))
-      ).sort()}
-      features={Array.from(
-        new Set(scenarioSeed.map((item) => item.feature))
-      ).sort()}
+      hierarchy={hierarchy}
       canCreate={profile.role !== "QA_TESTER"}
       initialCreateOpen={raw.create === "true"}
+      isDemoMode={shouldUseDemoData()}
     />
   )
 }

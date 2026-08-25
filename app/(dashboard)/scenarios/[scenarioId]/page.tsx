@@ -1,13 +1,15 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ChevronRightIcon, PencilIcon } from "lucide-react"
+import { ChevronRightIcon } from "lucide-react"
 
+import { ScenarioEditor } from "@/components/features/scenarios/scenario-editor"
 import { PriorityBadge } from "@/components/domain/priority-badge"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toScenarioFormValues } from "@/lib/scenario-adapters"
 import { getScenario } from "@/services/scenarios"
+import { listScenarioHierarchy } from "@/services/scenarios"
 import { requireUser } from "@/services/auth"
 
 export const metadata: Metadata = { title: "Scenario Detail" }
@@ -23,9 +25,10 @@ export default async function ScenarioDetailPage({
   params: Promise<{ scenarioId: string }>
 }) {
   const { scenarioId } = await params
-  const [profile, scenario] = await Promise.all([
+  const [profile, scenario, hierarchy] = await Promise.all([
     requireUser(),
     getScenario(scenarioId),
+    listScenarioHierarchy(),
   ])
   if (!scenario) notFound()
 
@@ -61,17 +64,12 @@ export default async function ScenarioDetailPage({
             {scenario.description}
           </p>
         </div>
-        {profile.role !== "QA_TESTER" ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            title="Persisted scenario editing will be available after backend integration."
-          >
-            <PencilIcon data-icon="inline-start" />
-            Edit Scenario
-          </Button>
-        ) : null}
+        <ScenarioEditor
+          hierarchy={hierarchy}
+          initialValues={toScenarioFormValues(scenario)}
+          role={profile.role}
+          scenarioId={scenario.id}
+        />
       </div>
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex min-w-0 flex-col gap-4">

@@ -1,13 +1,17 @@
+"use client"
+
+import { useMemo, useState } from "react"
 import { SearchIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import type { ScenarioHierarchy } from "@/types/qa"
 
 export function ScenarioFilters({
+  hierarchy,
   values,
-  modules,
-  features,
 }: {
+  hierarchy: ScenarioHierarchy
   values: {
     search?: string
     application?: string
@@ -17,9 +21,61 @@ export function ScenarioFilters({
     priority?: string
     updated?: string
   }
-  modules: string[]
-  features: string[]
 }) {
+  const filterKey = `${values.application ?? ""}:${values.module ?? ""}:${values.feature ?? ""}`
+
+  return (
+    <ScenarioFiltersInner
+      key={filterKey}
+      hierarchy={hierarchy}
+      values={values}
+    />
+  )
+}
+
+function ScenarioFiltersInner({
+  hierarchy,
+  values,
+}: {
+  hierarchy: ScenarioHierarchy
+  values: {
+    search?: string
+    application?: string
+    module?: string
+    feature?: string
+    type?: string
+    priority?: string
+    updated?: string
+  }
+}) {
+  const [application, setApplication] = useState(values.application ?? "")
+  const [module, setModule] = useState(values.module ?? "")
+  const [feature, setFeature] = useState(values.feature ?? "")
+
+  const moduleOptions = useMemo(
+    () =>
+      hierarchy.modules.filter(
+        (item) => !application || item.applicationSlug === application
+      ),
+    [application, hierarchy.modules]
+  )
+
+  const featureOptions = useMemo(
+    () =>
+      hierarchy.features.filter(
+        (item) =>
+          (!application || item.applicationSlug === application) &&
+          (!module || item.moduleSlug === module)
+      ),
+    [application, hierarchy.features, module]
+  )
+  const selectedModule = moduleOptions.some((item) => item.slug === module)
+    ? module
+    : ""
+  const selectedFeature = featureOptions.some((item) => item.slug === feature)
+    ? feature
+    : ""
+
   return (
     <form
       method="get"
@@ -43,16 +99,20 @@ export function ScenarioFilters({
       <select
         id="application"
         name="application"
-        defaultValue={values.application ?? ""}
+        value={application}
+        onChange={(event) => {
+          setApplication(event.target.value)
+          setModule("")
+          setFeature("")
+        }}
         className="h-8 rounded-lg border bg-background px-2 text-sm"
       >
         <option value="">All applications</option>
-        <option value="portal">Portal</option>
-        <option value="crm">CRM</option>
-        <option value="flowra">Flowra</option>
-        <option value="daily-operation">Daily Operation</option>
-        <option value="itqm">ITQM</option>
-        <option value="intranet">Intranet</option>
+        {hierarchy.applications.map((applicationOption) => (
+          <option key={applicationOption.id} value={applicationOption.slug}>
+            {applicationOption.name}
+          </option>
+        ))}
       </select>
       <label className="sr-only" htmlFor="module">
         Module
@@ -60,13 +120,17 @@ export function ScenarioFilters({
       <select
         id="module"
         name="module"
-        defaultValue={values.module ?? ""}
+        value={selectedModule}
+        onChange={(event) => {
+          setModule(event.target.value)
+          setFeature("")
+        }}
         className="h-8 rounded-lg border bg-background px-2 text-sm"
       >
         <option value="">All modules</option>
-        {modules.map((module) => (
-          <option key={module} value={module}>
-            {module}
+        {moduleOptions.map((moduleOption) => (
+          <option key={moduleOption.id} value={moduleOption.slug}>
+            {moduleOption.name}
           </option>
         ))}
       </select>
@@ -76,13 +140,14 @@ export function ScenarioFilters({
       <select
         id="feature"
         name="feature"
-        defaultValue={values.feature ?? ""}
+        value={selectedFeature}
+        onChange={(event) => setFeature(event.target.value)}
         className="h-8 rounded-lg border bg-background px-2 text-sm"
       >
         <option value="">All features</option>
-        {features.map((feature) => (
-          <option key={feature} value={feature}>
-            {feature}
+        {featureOptions.map((featureOption) => (
+          <option key={featureOption.id} value={featureOption.slug}>
+            {featureOption.name}
           </option>
         ))}
       </select>
