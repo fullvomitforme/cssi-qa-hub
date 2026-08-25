@@ -19,6 +19,11 @@ const accessMessages = {
     description:
       "Your account authenticated successfully, but QA Hub access has not been provisioned or is currently disabled. Contact a QA Hub administrator to continue.",
   },
+  inactive: {
+    title: "This QA Hub account is inactive",
+    description:
+      "Your profile exists, but an administrator has disabled access. Contact a QA Hub administrator if you need access restored.",
+  },
 } as const
 
 export default async function AccessPage({

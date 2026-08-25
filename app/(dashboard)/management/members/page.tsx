@@ -11,6 +11,10 @@ export default async function MembersPage({
 }) {
   const query = await searchParams
   const profile = await requireUser()
+  if (profile.role !== "ADMIN") {
+    const { redirect } = await import("next/navigation")
+    redirect("/overview")
+  }
   const records =
     shouldUseDemoData() || profile.role !== "ADMIN"
       ? undefined

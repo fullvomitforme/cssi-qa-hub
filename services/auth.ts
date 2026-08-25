@@ -22,6 +22,7 @@ export type AuthAccessState =
   | { kind: "active"; profile: CurrentProfile }
   | { kind: "unauthenticated" }
   | { kind: "unprovisioned"; email: string }
+  | { kind: "inactive"; email: string }
 
 export const getAuthAccessState = cache(async (): Promise<AuthAccessState> => {
   if (shouldUseDemoData()) {
@@ -48,9 +49,11 @@ export const getAuthAccessState = cache(async (): Promise<AuthAccessState> => {
     throw new Error(`Unable to load profile access state: ${error.message}`)
   }
 
-  if (!data || data.status !== "ACTIVE") {
+  if (!data) {
     return { kind: "unprovisioned", email: user.email ?? "" }
   }
+  if (data.status !== "ACTIVE")
+    return { kind: "inactive", email: user.email ?? "" }
 
   return {
     kind: "active",

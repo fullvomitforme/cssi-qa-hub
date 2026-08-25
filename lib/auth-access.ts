@@ -1,4 +1,5 @@
-export type AccessDecision = "active" | "unauthenticated" | "unprovisioned"
+export type AccessDecision =
+  "active" | "unauthenticated" | "unprovisioned" | "inactive"
 
 export function getProtectedRouteRedirect(decision: AccessDecision) {
   switch (decision) {
@@ -6,6 +7,8 @@ export function getProtectedRouteRedirect(decision: AccessDecision) {
       return "/login"
     case "unprovisioned":
       return "/access?reason=unprovisioned"
+    case "inactive":
+      return "/access?reason=inactive"
     default:
       return null
   }
@@ -17,6 +20,8 @@ export function getLoginRedirect(decision: AccessDecision) {
       return "/overview"
     case "unprovisioned":
       return "/access?reason=unprovisioned"
+    case "inactive":
+      return "/access?reason=inactive"
     default:
       return null
   }
