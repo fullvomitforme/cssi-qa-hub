@@ -31,14 +31,53 @@ export class BoardMutationError extends Error {
 export async function listBoardItems(): Promise<BoardItem[]> {
   if (shouldUseDemoData()) return []
   const supabase = await createClient()
-  const { data, error } = await supabase
+
+  // Fetch board items with their test_run_id
+  const { data: items, error: itemsError } = await supabase
     .from("qa_work_items")
     .select(
-      "id,title,priority,status,due_at,applications(name),features(name),releases(version),environments(name),qa_work_item_assignments(profiles(full_name))"
+      "id,title,priority,status,due_at,applications(name),features(name),releases(version),environments(name),qa_work_item_assignments(profiles(full_name)),test_run_id"
     )
     .order("created_at", { ascending: false })
-  if (error) throw new Error(`Unable to load QA work items: ${error.message}`)
-  return ((data ?? []) as unknown as Array<Record<string, unknown>>).map(
+  if (itemsError) throw new Error(`Unable to load QA work items: ${itemsError.message}`)
+
+  // Collect test_run_ids from board items
+  const runIds = ((items ?? []) as Array<{ test_run_id: string | null }>)
+    .map((row) => row.test_run_id)
+    .filter((id): id is string => id !== null)
+
+  // Fetch execution counts grouped by test_run_id
+  let countsByRun = new Map<
+    string,
+    { total: number; passed: number; failed: number; blocked: number; notTested: number }
+  >()
+  if (runIds.length > 0) {
+    const { data: execCounts, error: execError } = await supabase
+      .from("test_executions")
+      .select("test_run_id, status")
+      .in("test_run_id", runIds)
+    if (execError) throw new Error(`Unable to load execution counts: ${execError.message}`)
+
+    countsByRun = ((execCounts ?? []) as Array<{ test_run_id: string; status: string }>).reduce(
+      (acc, item) => {
+        const runId = String(item.test_run_id)
+        const existing = acc.get(runId) ?? { total: 0, passed: 0, failed: 0, blocked: 0, notTested: 0 }
+        existing.total += 1
+        if (item.status === "PASS") existing.passed += 1
+        else if (item.status === "FAIL") existing.failed += 1
+        else if (item.status === "BLOCKED") existing.blocked += 1
+        else if (item.status === "NOT_TESTED") existing.notTested += 1
+        acc.set(runId, existing)
+        return acc
+      },
+      new Map<
+        string,
+        { total: number; passed: number; failed: number; blocked: number; notTested: number }
+      >()
+    )
+  }
+
+  return ((items ?? []) as unknown as Array<Record<string, unknown>>).map(
     (row) => {
       const app = row.applications as { name: string } | null
       const feature = row.features as { name: string } | null
@@ -47,6 +86,8 @@ export async function listBoardItems(): Promise<BoardItem[]> {
       const assignments = (row.qa_work_item_assignments ?? []) as Array<{
         profiles: { full_name: string } | null
       }>
+      const runId = String(row.test_run_id ?? "")
+      const counts = runId ? countsByRun.get(runId) ?? { total: 0, passed: 0, failed: 0, blocked: 0, notTested: 0 } : { total: 0, passed: 0, failed: 0, blocked: 0, notTested: 0 }
       return {
         id: String(row.id),
         title: String(row.title),
@@ -62,11 +103,11 @@ export async function listBoardItems(): Promise<BoardItem[]> {
               day: "numeric",
             })
           : "—",
-        scenarios: 0,
-        passed: 0,
-        failed: 0,
-        blocked: 0,
-        untested: 0,
+        scenarios: counts.total,
+        passed: counts.passed,
+        failed: counts.failed,
+        blocked: counts.blocked,
+        untested: counts.notTested,
         status: row.status as BoardStatus,
       }
     }
