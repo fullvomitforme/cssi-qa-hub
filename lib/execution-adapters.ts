@@ -65,6 +65,14 @@ type ExecutionAttachmentRow = {
   uploaded_profile: ExecutionProfileRow
 }
 
+type ExecutionFeedbackRow = {
+  id: string
+  feedback_type: ExecutionFeedbackItem["type"]
+  description: string
+  created_at: string
+  created_by_profile: ExecutionProfileRow
+}
+
 export type RunExecutionWorkspaceRow = {
   id: string
   name: string
@@ -108,6 +116,7 @@ export type RunExecutionWorkspaceRow = {
     test_execution_steps: ExecutionStepRow[]
     test_execution_attempts: ExecutionAttemptRow[]
     attachments: ExecutionAttachmentRow[]
+    feedback?: ExecutionFeedbackRow[]
   }>
 }
 
@@ -144,6 +153,18 @@ function toFeedbackItems(execution: MockExecution): ExecutionFeedbackItem[] {
     comment: item.comment,
     author: item.author,
     createdAt: item.createdAt,
+  }))
+}
+
+function toRealFeedbackItems(
+  feedback: ExecutionFeedbackRow[] | null | undefined
+): ExecutionFeedbackItem[] {
+  return (feedback ?? []).map((item) => ({
+    id: item.id,
+    type: item.feedback_type,
+    comment: item.description,
+    author: item.created_by_profile?.full_name ?? "Unknown",
+    createdAt: formatDateTime(item.created_at),
   }))
 }
 
@@ -266,7 +287,7 @@ export function mapRunExecutionWorkspaceRow(
       attempts: [...execution.test_execution_attempts]
         .sort((left, right) => left.attempt_number - right.attempt_number)
         .map(toAttemptItem),
-      feedback: [],
+      feedback: toRealFeedbackItems(execution.feedback),
       attachments: execution.attachments.map((attachment) => ({
         id: attachment.id,
         storagePath: attachment.storage_path,

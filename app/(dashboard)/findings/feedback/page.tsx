@@ -1,8 +1,11 @@
 import type { Metadata } from "next"
 import { FeedbackWorkspace } from "@/components/features/findings/feedback-workspace"
+import { shouldUseDemoData } from "@/lib/env"
+import { listFeedback } from "@/services/findings"
 
 export const metadata: Metadata = { title: "Feedback" }
-export default function FeedbackPage() {
+export default async function FeedbackPage() {
+  const feedback = shouldUseDemoData() ? undefined : await listFeedback()
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -12,7 +15,7 @@ export default function FeedbackPage() {
           independently from execution status.
         </p>
       </div>
-      <FeedbackWorkspace />
+      <FeedbackWorkspace items={feedback} />
     </main>
   )
 }

@@ -7,6 +7,7 @@ import {
 } from "@/lib/execution-adapters"
 import { shouldUseDemoData } from "@/lib/env"
 import { createClient } from "@/lib/supabase/server"
+import { recordFailureForExecution } from "@/services/findings"
 import type { ExecutionSaveInput, ExecutionWorkspaceRun } from "@/types/qa"
 
 const EVIDENCE_BUCKET = "qa-evidence"
@@ -32,7 +33,7 @@ export async function getRunExecutionWorkspace(
   const { data, error } = await supabase
     .from("test_runs")
     .select(
-      "id,name,status,build,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_run_assignments(profiles!inner(full_name,role)),test_executions(id,source_scenario_id,scenario_title,scenario_description,scenario_preconditions,scenario_expected_result,scenario_priority,scenario_type,status,actual_result,failure_reason,severity,bug_reference,tested_at,tested_profile:profiles!test_executions_tested_by_fkey(full_name),source_scenario:test_scenarios!test_executions_source_scenario_id_fkey(modules!inner(name)),test_execution_steps(id,source_step_id,position,instruction,expected_result,status,actual_result),test_execution_attempts(id,attempt_number,status,build,actual_result,failure_reason,severity,bug_reference,executed_at),attachments(id,storage_path,filename,mime_type,size_bytes,uploaded_at,uploaded_profile:profiles!attachments_uploaded_by_fkey(full_name)))"
+      "id,name,status,build,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_run_assignments(profiles!inner(full_name,role)),test_executions(id,source_scenario_id,scenario_title,scenario_description,scenario_preconditions,scenario_expected_result,scenario_priority,scenario_type,status,actual_result,failure_reason,severity,bug_reference,tested_at,tested_profile:profiles!test_executions_tested_by_fkey(full_name),source_scenario:test_scenarios!test_executions_source_scenario_id_fkey(modules!inner(name)),test_execution_steps(id,source_step_id,position,instruction,expected_result,status,actual_result),test_execution_attempts(id,attempt_number,status,build,actual_result,failure_reason,severity,bug_reference,executed_at),attachments(id,storage_path,filename,mime_type,size_bytes,uploaded_at,uploaded_profile:profiles!attachments_uploaded_by_fkey(full_name)),feedback(id,feedback_type,description,created_at,created_by_profile:profiles!feedback_created_by_fkey(full_name)))"
     )
     .eq("id", runId)
     .single()
@@ -132,6 +133,25 @@ export async function saveExecutionRecord(
       `Unable to save execution: ${error.message}`,
       "UNKNOWN"
     )
+  }
+
+  try {
+    await recordFailureForExecution({
+      executionId: input.executionId,
+      status: input.status,
+      actualResult: input.actualResult,
+      failureReason: input.failureReason,
+      severity: input.severity,
+      bugReference: input.bugReference,
+    })
+  } catch (findingError) {
+    if (findingError instanceof Error) {
+      throw new ExecutionMutationError(
+        `Execution saved, but its finding could not be recorded: ${findingError.message}`,
+        "UNKNOWN"
+      )
+    }
+    throw findingError
   }
 
   const updated = await getRunExecutionWorkspace(input.runId)

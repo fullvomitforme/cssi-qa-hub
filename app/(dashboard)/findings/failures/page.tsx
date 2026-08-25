@@ -1,8 +1,11 @@
 import type { Metadata } from "next"
 import { FailureList } from "@/components/features/findings/failure-list"
+import { shouldUseDemoData } from "@/lib/env"
+import { listFailures } from "@/services/findings"
 
 export const metadata: Metadata = { title: "Failures" }
-export default function FailuresPage() {
+export default async function FailuresPage() {
+  const failures = shouldUseDemoData() ? undefined : await listFailures()
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -11,7 +14,7 @@ export default function FailuresPage() {
           Investigate failed scenarios and follow every fix through retesting.
         </p>
       </div>
-      <FailureList />
+      <FailureList items={failures} />
     </main>
   )
 }

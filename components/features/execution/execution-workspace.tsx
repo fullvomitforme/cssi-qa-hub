@@ -23,6 +23,7 @@ import {
   deleteAttachmentAction,
   registerAttachmentAction,
 } from "@/app/actions/attachments"
+import { createFeedbackAction } from "@/app/actions/findings"
 import {
   attachmentAcceptAttribute,
   buildExecutionAttachmentPath,
@@ -262,6 +263,44 @@ export function ExecutionWorkspace({
   function addFeedback() {
     const comment = feedbackDrafts[selected.id]?.trim()
     if (!comment) return
+
+    if (mode === "real") {
+      if (!canMutate) {
+        setSaveError("You do not have permission to add feedback.")
+        return
+      }
+      setSaveError(null)
+      setSaveMessage(null)
+      startTransition(async () => {
+        const result = await createFeedbackAction({
+          executionId: selected.id,
+          scenarioId: selected.sourceScenarioId,
+          type: feedbackType,
+          title: `${feedbackType} feedback for ${selected.title}`,
+          description: comment,
+          severity: selected.severity,
+        })
+        if (result.status === "success") {
+          updateSelected({
+            feedback: [
+              ...selected.feedback,
+              {
+                id: `feedback-${selected.id}-${Date.now()}`,
+                type: feedbackType,
+                comment,
+                author: runState.tester,
+                createdAt: "Just now",
+              },
+            ],
+          })
+          setFeedbackDrafts((current) => ({ ...current, [selected.id]: "" }))
+          setSaveMessage(result.message ?? "Feedback saved.")
+        } else {
+          setSaveError(result.message ?? "Unable to save feedback.")
+        }
+      })
+      return
+    }
 
     updateSelected({
       feedback: [
@@ -1003,7 +1042,7 @@ export function ExecutionWorkspace({
                     : "No feedback recorded for this execution."}
                 </p>
               )}
-              {mode === "demo" ? (
+              {mode === "demo" || canMutate ? (
                 <div className="mt-2 grid grid-cols-[8rem_minmax(0,1fr)_auto] gap-2">
                   <select
                     value={feedbackType}

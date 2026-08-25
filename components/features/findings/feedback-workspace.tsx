@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { TestStatusBadge } from "@/components/domain/test-status-badge"
+import { createCommentAction } from "@/app/actions/findings"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { feedbackItems } from "@/lib/data/product-seed"
+import type { FeedbackListItem } from "@/services/findings"
 import type { ExecutionStatus } from "@/types/qa"
 
 const icons = {
@@ -56,24 +58,45 @@ type Comment = {
   createdAt: string
 }
 
-export function FeedbackWorkspace() {
-  const [items, setItems] = useState<FeedbackItem[]>(() =>
-    feedbackItems.map((item) => ({ ...item }))
-  )
-  const [selectedId, setSelectedId] = useState<string>(feedbackItems[0].id)
+export function FeedbackWorkspace({
+  items: realItems,
+}: {
+  items?: FeedbackListItem[]
+}) {
+  const sourceItems = realItems
+    ? realItems.map((item) => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        application: item.application,
+        scenario: item.scenario,
+        severity: item.severity ?? "LOW",
+        status: item.status,
+        author: item.author,
+        createdAt: item.createdAt,
+        executionStatus: "NOT_TESTED" as ExecutionStatus,
+      }))
+    : feedbackItems.map((item) => ({ ...item }))
+  const [items, setItems] = useState<FeedbackItem[]>(sourceItems)
+  const [selectedId, setSelectedId] = useState<string>(sourceItems[0]?.id ?? "")
   const [search, setSearch] = useState("")
   const [type, setType] = useState<FeedbackType | "ALL">("ALL")
   const [createOpen, setCreateOpen] = useState(false)
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [comments, setComments] = useState<Record<string, Comment[]>>(() => ({
-    [feedbackItems[0].id]: [
-      {
-        id: "comment-seed-1",
-        body: "Thanks—product review is scheduled for the release readiness meeting.",
-        author: "Andi Pratama",
-        createdAt: "24 minutes ago",
-      },
-    ],
+    ...(sourceItems[0]
+      ? {
+          [sourceItems[0].id]: [
+            {
+              id: "comment-seed-1",
+              body: "Thanks—product review is scheduled for the release readiness meeting.",
+              author: "Andi Pratama",
+              createdAt: "24 minutes ago",
+            },
+          ],
+        }
+      : {}),
   }))
 
   const filteredItems = items.filter((item) => {
@@ -114,6 +137,29 @@ export function FeedbackWorkspace() {
   function addComment() {
     const body = commentDrafts[selected.id]?.trim()
     if (!body) return
+    if (realItems) {
+      void createCommentAction({
+        subjectType: "FEEDBACK",
+        subjectId: selected.id,
+        body,
+      }).then((result) => {
+        if (result.status === "error") return
+        setComments((current) => ({
+          ...current,
+          [selected.id]: [
+            ...(current[selected.id] ?? []),
+            {
+              id: `comment-${selected.id}-${Date.now()}`,
+              body,
+              author: selected.author,
+              createdAt: "Just now",
+            },
+          ],
+        }))
+      })
+      setCommentDrafts((current) => ({ ...current, [selected.id]: "" }))
+      return
+    }
     setComments((current) => ({
       ...current,
       [selected.id]: [
@@ -156,7 +202,16 @@ export function FeedbackWorkspace() {
                 <option key={item}>{item}</option>
               ))}
             </select>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Button
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+              disabled={Boolean(realItems)}
+              title={
+                realItems
+                  ? "Create feedback from an execution workspace."
+                  : undefined
+              }
+            >
               New feedback
             </Button>
           </div>

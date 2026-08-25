@@ -23,11 +23,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { failureItems, getTestRunDetail } from "@/lib/data/product-seed"
+import {
+  failureItems as demoFailureItems,
+  getTestRunDetail,
+} from "@/lib/data/product-seed"
+import type { FailureListItem } from "@/services/findings"
 
-type Failure = (typeof failureItems)[number]
+type Failure = FailureListItem & { feature: string; foundAt: string }
 
-export function FailureList() {
+export function FailureList({ items }: { items?: FailureListItem[] }) {
+  const failureItems: Failure[] = items
+    ? items.map((item) => ({ ...item, feature: "—" }))
+    : (demoFailureItems as unknown as Failure[])
   const [selected, setSelected] = useState<Failure | null>(null)
   const [search, setSearch] = useState("")
   const [application, setApplication] = useState("ALL")
@@ -47,7 +54,9 @@ export function FailureList() {
       (retest === "ALL" || failure.retestStatus === retest)
     )
   })
-  const selectedRun = selected ? getTestRunDetail(selected.runId) : undefined
+  const selectedRun = selected?.runId
+    ? getTestRunDetail(selected.runId)
+    : undefined
   const selectedExecution = selectedRun?.executions.find(
     (execution) => execution.id === selected?.executionId
   )
