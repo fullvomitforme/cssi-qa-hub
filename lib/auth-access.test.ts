@@ -33,3 +33,17 @@ describe("getLoginRedirect", () => {
     expect(getLoginRedirect("unauthenticated")).toBeNull()
   })
 })
+
+describe("Auth route guards", () => {
+  it("should not redirect authenticated users to login", () => {
+    const decision = "active"
+    const redirectToLogin = getLoginRedirect(decision)
+    expect(redirectToLogin).toBe("/overview")
+  })
+
+  it("should handle unauthenticated users gracefully", () => {
+    const decision = "unauthenticated"
+    const redirectToProtected = getProtectedRouteRedirect(decision)
+    expect(redirectToProtected).toBe("/login")
+  })
+})

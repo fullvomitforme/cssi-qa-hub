@@ -22,10 +22,12 @@ if (!parsed.success) {
 export const env = {
   supabaseUrl: parsed.data.NEXT_PUBLIC_SUPABASE_URL,
   supabasePublishableKey: parsed.data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  // Demo mode is only active when explicitly enabled AND Supabase is configured.
+  // When Supabase is not configured, we fall back to demo mode automatically.
   demoMode:
     parsed.data.NEXT_PUBLIC_QA_DEMO_MODE === "true" ||
     (!parsed.data.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NODE_ENV !== "production"),
+      !parsed.data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
 }
 
 export function isSupabaseConfigured() {
