@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { ReleasesList } from "@/components/features/management/management-lists"
 import { requireUser } from "@/services/auth"
 import { listReleases } from "@/services/reference-data"
+import { shouldUseDemoData } from "@/lib/env"
 export const metadata: Metadata = { title: "Releases" }
 export default async function ReleasesPage() {
   const [profile, items] = await Promise.all([requireUser(), listReleases()])
@@ -15,7 +16,11 @@ export default async function ReleasesPage() {
           application.
         </p>
       </div>
-      <ReleasesList initialItems={items} canManage={profile.role === "ADMIN"} />
+      <ReleasesList
+        initialItems={items}
+        canManage={profile.role === "ADMIN"}
+        mode={shouldUseDemoData() ? "demo" : "real"}
+      />
     </main>
   )
 }

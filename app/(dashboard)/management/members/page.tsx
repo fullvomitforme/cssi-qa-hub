@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
 import { MembersList } from "@/components/features/management/management-lists"
+import { shouldUseDemoData } from "@/lib/env"
+import { listMemberRecords } from "@/services/management"
+import { requireUser } from "@/services/auth"
 export const metadata: Metadata = { title: "QA Members" }
 export default async function MembersPage({
   searchParams,
@@ -7,6 +10,21 @@ export default async function MembersPage({
   searchParams: Promise<{ invite?: string }>
 }) {
   const query = await searchParams
+  const profile = await requireUser()
+  const records =
+    shouldUseDemoData() || profile.role !== "ADMIN"
+      ? undefined
+      : await listMemberRecords()
+  const items = records?.map((item) => ({
+    id: item.id,
+    name: item.full_name,
+    email: item.email,
+    role: item.role,
+    assignments: 0,
+    activeRuns: 0,
+    lastActive: item.updated_at,
+    status: item.status,
+  }))
 
   return (
     <main className="min-w-0">
@@ -16,7 +34,11 @@ export default async function MembersPage({
           Manage QA roles, current workload, and product assignments.
         </p>
       </div>
-      <MembersList initialCreateOpen={query.invite === "true"} />
+      <MembersList
+        initialCreateOpen={query.invite === "true"}
+        initialItems={items}
+        mode={shouldUseDemoData() ? "demo" : "real"}
+      />
     </main>
   )
 }

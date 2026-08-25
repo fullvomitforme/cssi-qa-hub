@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { EnvironmentsList } from "@/components/features/management/management-lists"
 import { requireUser } from "@/services/auth"
 import { listEnvironments } from "@/services/reference-data"
+import { shouldUseDemoData } from "@/lib/env"
 export const metadata: Metadata = { title: "Environments" }
 export default async function EnvironmentsPage() {
   const [profile, items] = await Promise.all([
@@ -21,6 +22,7 @@ export default async function EnvironmentsPage() {
       <EnvironmentsList
         initialItems={items}
         canManage={profile.role === "ADMIN"}
+        mode={shouldUseDemoData() ? "demo" : "real"}
       />
     </main>
   )
