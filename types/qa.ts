@@ -17,6 +17,10 @@ export type TestType =
 export type ExecutionStatus =
   "NOT_TESTED" | "PASS" | "FAIL" | "BLOCKED" | "SKIPPED"
 
+export type StepStatus = "PASS" | "FAIL" | "SKIPPED"
+
+export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+
 export interface CurrentProfile {
   id: string
   fullName: string
@@ -372,6 +376,89 @@ export interface RunFormValues {
   build: string
   status: RunStatus
   assignmentProfileIds: string[]
+}
+
+export interface ExecutionAttemptItem {
+  id: string
+  number: number
+  status: Exclude<ExecutionStatus, "NOT_TESTED">
+  build: string
+  testedAt: string
+  actualResult: string
+  failureReason: string
+  severity: Severity | null
+  bugReference: string
+}
+
+export interface ExecutionFeedbackItem {
+  id: string
+  type: "BUG" | "UX" | "COPY" | "IMPROVEMENT" | "QUESTION"
+  comment: string
+  author: string
+  createdAt: string
+}
+
+export interface ExecutionStepItem {
+  id: string
+  sourceStepId: string | null
+  position: number
+  instruction: string
+  expectedResult: string
+  status: StepStatus | null
+  actualResult: string
+}
+
+export interface ExecutionItem {
+  id: string
+  sourceScenarioId: string
+  module: string
+  title: string
+  description: string
+  preconditions: string
+  expectedResult: string
+  actualResult: string
+  status: ExecutionStatus
+  priority: Priority
+  type: TestType
+  severity: Severity | null
+  failureReason: string
+  bugReference: string
+  tester: string
+  testedAt: string | null
+  steps: ExecutionStepItem[]
+  attempts: ExecutionAttemptItem[]
+  feedback: ExecutionFeedbackItem[]
+}
+
+export interface ExecutionWorkspaceRun {
+  id: string
+  name: string
+  application: string
+  environment: string
+  release: string
+  build: string
+  tester: string
+  startedLabel: string
+  endDateLabel: string
+  status: RunStatus
+  progress: number
+  passRate: number
+  executions: ExecutionItem[]
+}
+
+export interface ExecutionSaveInput {
+  runId: string
+  executionId: string
+  status: Exclude<ExecutionStatus, "NOT_TESTED">
+  actualResult: string
+  failureReason: string
+  severity: Severity | null
+  bugReference: string
+  steps: Array<{
+    id: string
+    status: StepStatus | null
+    actualResult: string
+  }>
 }
 
 export interface OverviewMetric {

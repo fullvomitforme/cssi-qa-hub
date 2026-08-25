@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
 import Image from "next/image"
+import { useMemo, useState, useTransition } from "react"
 import {
   BanIcon,
   CheckIcon,
@@ -15,6 +15,10 @@ import {
   XIcon,
 } from "lucide-react"
 
+import {
+  saveExecutionAction,
+  type SaveExecutionActionResult,
+} from "@/app/actions/executions"
 import { SeverityBadge } from "@/components/domain/severity-badge"
 import { TestStatusBadge } from "@/components/domain/test-status-badge"
 import { Badge } from "@/components/ui/badge"
@@ -29,13 +33,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-import type {
-  MockExecution,
-  MockExecutionFeedback,
-  MockRunDetail,
-} from "@/lib/data/product-seed"
 import { calculateExecutionMetrics } from "@/lib/execution-metrics"
-import type { ExecutionStatus } from "@/types/qa"
+import type {
+  ExecutionFeedbackItem,
+  ExecutionItem,
+  ExecutionStatus,
+  ExecutionWorkspaceRun,
+  Severity,
+} from "@/types/qa"
 
 const statusIcons = {
   PASS: CheckIcon,
@@ -52,7 +57,7 @@ const actionStyles = {
   SKIPPED: "text-muted-foreground",
 } as const
 
-const feedbackTypes: MockExecutionFeedback["type"][] = [
+const feedbackTypes: ExecutionFeedbackItem["type"][] = [
   "BUG",
   "UX",
   "COPY",
@@ -67,11 +72,27 @@ type LocalEvidence = {
   previewUrl: string
 }
 
-function cloneExecution(execution: MockExecution): MockExecution {
+type ExecutionWorkspaceProps = {
+  run: ExecutionWorkspaceRun
+  initialExecutionId?: string
+  initialShowHistory?: boolean
+  mode?: "demo" | "real"
+  canMutate?: boolean
+}
+
+function cloneExecution(execution: ExecutionItem): ExecutionItem {
   return {
     ...execution,
-    attempts: execution.attempts?.map((attempt) => ({ ...attempt })),
-    feedback: execution.feedback?.map((item) => ({ ...item })),
+    steps: execution.steps.map((step) => ({ ...step })),
+    attempts: execution.attempts.map((attempt) => ({ ...attempt })),
+    feedback: execution.feedback.map((item) => ({ ...item })),
+  }
+}
+
+function cloneRun(run: ExecutionWorkspaceRun): ExecutionWorkspaceRun {
+  return {
+    ...run,
+    executions: run.executions.map(cloneExecution),
   }
 }
 
@@ -79,13 +100,11 @@ export function ExecutionWorkspace({
   run,
   initialExecutionId,
   initialShowHistory = false,
-}: {
-  run: MockRunDetail
-  initialExecutionId?: string
-  initialShowHistory?: boolean
-}) {
-  const [executions, setExecutions] = useState<MockExecution[]>(() =>
-    run.executions.map(cloneExecution)
+  mode = "demo",
+  canMutate = false,
+}: ExecutionWorkspaceProps) {
+  const [runState, setRunState] = useState<ExecutionWorkspaceRun>(() =>
+    cloneRun(run)
   )
   const [selectedId, setSelectedId] = useState(() =>
     run.executions.some((execution) => execution.id === initialExecutionId)
@@ -98,23 +117,18 @@ export function ExecutionWorkspace({
   )
   const [pendingFailureId, setPendingFailureId] = useState<string | null>(null)
   const [collapsedModules, setCollapsedModules] = useState<string[]>([])
-  const [stepResults, setStepResults] = useState<Record<string, boolean[]>>(
-    () =>
-      Object.fromEntries(
-        run.executions.map((execution) => [
-          execution.id,
-          execution.steps.map(() => execution.status === "PASS"),
-        ])
-      )
-  )
   const [evidence, setEvidence] = useState<Record<string, LocalEvidence[]>>({})
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>(
     {}
   )
   const [feedbackType, setFeedbackType] =
-    useState<MockExecutionFeedback["type"]>("BUG")
+    useState<ExecutionFeedbackItem["type"]>("BUG")
   const [historyOpen, setHistoryOpen] = useState(initialShowHistory)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
+  const executions = runState.executions
   const selected =
     executions.find((execution) => execution.id === selectedId) ?? executions[0]
   const metrics = useMemo(
@@ -146,7 +160,7 @@ export function ExecutionWorkspace({
   const runHistory = useMemo(
     () =>
       executions.flatMap((execution) =>
-        (execution.attempts ?? []).map((attempt) => ({
+        execution.attempts.map((attempt) => ({
           ...attempt,
           executionId: execution.id,
           scenario: execution.title,
@@ -160,7 +174,6 @@ export function ExecutionWorkspace({
   }
 
   const selectedEvidence = evidence[selected.id] ?? []
-  const selectedSteps = stepResults[selected.id] ?? []
   const failureDraftActive =
     selected.status === "FAIL" || pendingFailureId === selected.id
   const failureMissing = failureDraftActive
@@ -171,61 +184,38 @@ export function ExecutionWorkspace({
       ].filter(Boolean)
     : []
 
-  function setStatus(status: ExecutionStatus) {
-    if (
-      status === "FAIL" &&
-      (!selected.actualResult.trim() ||
-        !selected.failureReason.trim() ||
-        !selected.severity)
-    ) {
-      setPendingFailureId(selected.id)
-      return
-    }
-
-    setPendingFailureId(null)
-    setExecutions((current) =>
-      current.map((execution) => {
-        if (execution.id !== selectedId) return execution
-        if (execution.status === status) return execution
-        const testedAt = status === "NOT_TESTED" ? null : "Aug 25, 2026 14:42"
-        const shouldRecord =
-          status !== "NOT_TESTED" &&
-          (status !== "FAIL" ||
-            Boolean(
-              execution.actualResult.trim() &&
-              execution.failureReason.trim() &&
-              execution.severity
-            ))
-        const attempts = shouldRecord
-          ? [
-              ...(execution.attempts ?? []),
-              {
-                number: (execution.attempts?.length ?? 0) + 1,
-                status,
-                build: run.build,
-                testedAt: testedAt as string,
-              },
-            ]
-          : [...(execution.attempts ?? [])]
-        return { ...execution, status, testedAt, attempts }
-      })
-    )
-  }
-
-  function updateSelected(patch: Partial<MockExecution>) {
-    setExecutions((current) =>
-      current.map((execution) =>
+  function updateSelected(patch: Partial<ExecutionItem>) {
+    setSaveError(null)
+    setSaveMessage(null)
+    setRunState((current) => ({
+      ...current,
+      executions: current.executions.map((execution) =>
         execution.id === selectedId ? { ...execution, ...patch } : execution
-      )
-    )
+      ),
+    }))
   }
 
   function toggleStep(index: number) {
-    setStepResults((current) => ({
+    setSaveError(null)
+    setSaveMessage(null)
+    setRunState((current) => ({
       ...current,
-      [selected.id]: selectedSteps.map((passed, stepIndex) =>
-        stepIndex === index ? !passed : passed
-      ),
+      executions: current.executions.map((execution) => {
+        if (execution.id !== selectedId) return execution
+
+        return {
+          ...execution,
+          steps: execution.steps.map((step, stepIndex) =>
+            stepIndex === index
+              ? {
+                  ...step,
+                  status: step.status === "PASS" ? null : "PASS",
+                  actualResult: "",
+                }
+              : step
+          ),
+        }
+      }),
     }))
   }
 
@@ -240,14 +230,15 @@ export function ExecutionWorkspace({
   function addFeedback() {
     const comment = feedbackDrafts[selected.id]?.trim()
     if (!comment) return
+
     updateSelected({
       feedback: [
-        ...(selected.feedback ?? []),
+        ...selected.feedback,
         {
           id: `feedback-${selected.id}-${Date.now()}`,
           type: feedbackType,
           comment,
-          author: run.tester,
+          author: runState.tester,
           createdAt: "Just now",
         },
       ],
@@ -256,12 +247,14 @@ export function ExecutionWorkspace({
   }
 
   function addEvidence(files: FileList | null) {
-    if (!files?.length) return
+    if (mode !== "demo" || !files?.length) return
+
     Array.from(files).forEach((file) => {
       const reader = new FileReader()
       reader.onload = () => {
-        if (typeof reader.result !== "string") return
         const previewUrl = reader.result
+        if (typeof previewUrl !== "string") return
+
         setEvidence((current) => ({
           ...current,
           [selected.id]: [
@@ -280,11 +273,106 @@ export function ExecutionWorkspace({
   }
 
   function removeEvidence(id: string) {
+    if (mode !== "demo") return
+
     setEvidence((current) => ({
       ...current,
       [selected.id]: (current[selected.id] ?? []).filter(
         (item) => item.id !== id
       ),
+    }))
+  }
+
+  async function persistExecution(
+    status: Exclude<ExecutionStatus, "NOT_TESTED">
+  ): Promise<SaveExecutionActionResult> {
+    return saveExecutionAction({
+      runId: runState.id,
+      executionId: selected.id,
+      status,
+      actualResult: selected.actualResult,
+      failureReason: selected.failureReason,
+      severity: selected.severity,
+      bugReference: selected.bugReference,
+      steps: selected.steps.map((step) => ({
+        id: step.id,
+        status: step.status,
+        actualResult: step.actualResult,
+      })),
+    })
+  }
+
+  function setStatus(status: Exclude<ExecutionStatus, "NOT_TESTED">) {
+    if (
+      status === "FAIL" &&
+      (!selected.actualResult.trim() ||
+        !selected.failureReason.trim() ||
+        !selected.severity)
+    ) {
+      setPendingFailureId(selected.id)
+      return
+    }
+
+    if (mode === "demo") {
+      setPendingFailureId(null)
+      setExecutionsForDemoStatus(status)
+      return
+    }
+
+    if (!canMutate) {
+      setSaveError("You do not have permission to record results for this run.")
+      return
+    }
+
+    setPendingFailureId(null)
+    setSaveError(null)
+    setSaveMessage(null)
+
+    startTransition(async () => {
+      const result = await persistExecution(status)
+
+      if (result.status === "success" && result.run) {
+        setRunState(cloneRun(result.run))
+        setSaveMessage(result.message ?? "Execution saved.")
+        return
+      }
+
+      setSaveError(result.message ?? "Unable to save this execution.")
+    })
+  }
+
+  function setExecutionsForDemoStatus(
+    status: Exclude<ExecutionStatus, "NOT_TESTED">
+  ) {
+    setRunState((current) => ({
+      ...current,
+      executions: current.executions.map((execution) => {
+        if (execution.id !== selectedId) return execution
+        if (execution.status === status) return execution
+
+        const testedAt = "Aug 25, 2026 14:42"
+        const attempts = [
+          ...execution.attempts,
+          {
+            id: `${execution.id}-attempt-${execution.attempts.length + 1}`,
+            number: execution.attempts.length + 1,
+            status,
+            build: current.build,
+            testedAt,
+            actualResult: execution.actualResult,
+            failureReason: execution.failureReason,
+            severity: execution.severity,
+            bugReference: execution.bugReference,
+          },
+        ]
+
+        return {
+          ...execution,
+          status,
+          testedAt,
+          attempts,
+        }
+      }),
     }))
   }
 
@@ -410,7 +498,11 @@ export function ExecutionWorkspace({
                             <button
                               key={execution.id}
                               type="button"
-                              onClick={() => setSelectedId(execution.id)}
+                              onClick={() => {
+                                setSelectedId(execution.id)
+                                setSaveError(null)
+                                setSaveMessage(null)
+                              }}
                               className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent ${execution.id === selectedId ? "bg-accent" : "bg-background"}`}
                             >
                               <Icon
@@ -463,19 +555,19 @@ export function ExecutionWorkspace({
               </h3>
               <ol className="mt-2 space-y-2">
                 {selected.steps.map((step, index) => {
-                  const passed = selectedSteps[index]
+                  const passed = step.status === "PASS"
                   return (
                     <li
-                      key={step}
+                      key={step.id}
                       className="grid grid-cols-[24px_1fr_auto] items-start gap-2 text-sm"
                     >
                       <span className="flex size-5 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
-                        {index + 1}
+                        {step.position}
                       </span>
                       <span
                         className={`leading-5 ${passed ? "text-muted-foreground line-through" : ""}`}
                       >
-                        {step}
+                        {step.instruction}
                       </span>
                       <Button
                         variant={passed ? "secondary" : "ghost"}
@@ -484,6 +576,7 @@ export function ExecutionWorkspace({
                         className={passed ? "text-success-text" : undefined}
                         aria-label={`${passed ? "Reset" : "Mark"} step ${index + 1} ${passed ? "result" : "passed"}`}
                         aria-pressed={passed}
+                        disabled={mode === "real" && !canMutate}
                       >
                         <CheckIcon />
                       </Button>
@@ -511,6 +604,19 @@ export function ExecutionWorkspace({
                   failure is ready to record.
                 </p>
               ) : null}
+              {saveError ? (
+                <p
+                  role="alert"
+                  className="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+                >
+                  {saveError}
+                </p>
+              ) : null}
+              {saveMessage ? (
+                <p className="border border-success-border bg-success-bg p-3 text-xs text-success-text">
+                  {saveMessage}
+                </p>
+              ) : null}
               <label className="block text-xs font-semibold text-muted-foreground uppercase">
                 Actual result{" "}
                 {failureDraftActive ? (
@@ -526,6 +632,7 @@ export function ExecutionWorkspace({
                   }
                   className="mt-2 min-h-20"
                   placeholder="Describe what actually happened…"
+                  disabled={mode === "real" && !canMutate}
                 />
               </label>
               {failureDraftActive || selected.failureReason ? (
@@ -540,6 +647,7 @@ export function ExecutionWorkspace({
                       aria-invalid={!selected.failureReason.trim()}
                       className="mt-2 min-h-16"
                       placeholder="Explain why this scenario failed…"
+                      disabled={mode === "real" && !canMutate}
                     />
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -550,13 +658,13 @@ export function ExecutionWorkspace({
                         onChange={(event) =>
                           updateSelected({
                             severity: event.target.value
-                              ? (event.target
-                                  .value as MockExecution["severity"])
+                              ? (event.target.value as Severity)
                               : null,
                           })
                         }
                         aria-invalid={!selected.severity}
                         className="mt-2 h-8 w-full rounded-lg border bg-background px-2 text-sm aria-invalid:border-destructive"
+                        disabled={mode === "real" && !canMutate}
                       >
                         <option value="">Select severity</option>
                         <option>CRITICAL</option>
@@ -574,6 +682,7 @@ export function ExecutionWorkspace({
                         }
                         className="mt-2"
                         placeholder="PORTAL-000"
+                        disabled={mode === "real" && !canMutate}
                       />
                     </label>
                   </div>
@@ -585,22 +694,28 @@ export function ExecutionWorkspace({
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase">
                   Evidence
                 </h3>
-                <label className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-medium hover:bg-muted">
-                  <FileImageIcon className="size-3" />
-                  Add evidence
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="sr-only"
-                    onChange={(event) => {
-                      addEvidence(event.target.files)
-                      event.target.value = ""
-                    }}
-                  />
-                </label>
+                {mode === "demo" ? (
+                  <label className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-medium hover:bg-muted">
+                    <FileImageIcon className="size-3" />
+                    Add evidence
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={(event) => {
+                        addEvidence(event.target.files)
+                        event.target.value = ""
+                      }}
+                    />
+                  </label>
+                ) : null}
               </div>
-              {selectedEvidence.length ? (
+              {mode === "real" ? (
+                <p className="mt-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                  Evidence uploads are connected in the next phase.
+                </p>
+              ) : selectedEvidence.length ? (
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {selectedEvidence.map((item) => (
                     <div
@@ -659,7 +774,7 @@ export function ExecutionWorkspace({
               <h3 className="text-xs font-semibold text-muted-foreground uppercase">
                 Feedback
               </h3>
-              {selected.feedback?.length ? (
+              {selected.feedback.length ? (
                 <div className="mt-2 space-y-2">
                   {selected.feedback.map((item) => (
                     <div
@@ -678,56 +793,60 @@ export function ExecutionWorkspace({
                 </div>
               ) : (
                 <p className="mt-2 rounded-md border p-3 text-sm text-muted-foreground">
-                  No feedback recorded for this execution.
+                  {mode === "real"
+                    ? "Feedback persistence is connected in the findings phase."
+                    : "No feedback recorded for this execution."}
                 </p>
               )}
-              <div className="mt-2 grid grid-cols-[8rem_minmax(0,1fr)_auto] gap-2">
-                <select
-                  value={feedbackType}
-                  onChange={(event) =>
-                    setFeedbackType(
-                      event.target.value as MockExecutionFeedback["type"]
-                    )
-                  }
-                  aria-label="Feedback type"
-                  className="h-8 rounded-lg border bg-background px-2 text-xs"
-                >
-                  {feedbackTypes.map((type) => (
-                    <option key={type}>{type}</option>
-                  ))}
-                </select>
-                <Input
-                  value={feedbackDrafts[selected.id] ?? ""}
-                  onChange={(event) =>
-                    setFeedbackDrafts((current) => ({
-                      ...current,
-                      [selected.id]: event.target.value,
-                    }))
-                  }
-                  placeholder="Add execution feedback…"
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") addFeedback()
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={addFeedback}
-                  aria-label="Add feedback"
-                  disabled={!feedbackDrafts[selected.id]?.trim()}
-                >
-                  <MessageSquareTextIcon />
-                </Button>
-              </div>
+              {mode === "demo" ? (
+                <div className="mt-2 grid grid-cols-[8rem_minmax(0,1fr)_auto] gap-2">
+                  <select
+                    value={feedbackType}
+                    onChange={(event) =>
+                      setFeedbackType(
+                        event.target.value as ExecutionFeedbackItem["type"]
+                      )
+                    }
+                    aria-label="Feedback type"
+                    className="h-8 rounded-lg border bg-background px-2 text-xs"
+                  >
+                    {feedbackTypes.map((type) => (
+                      <option key={type}>{type}</option>
+                    ))}
+                  </select>
+                  <Input
+                    value={feedbackDrafts[selected.id] ?? ""}
+                    onChange={(event) =>
+                      setFeedbackDrafts((current) => ({
+                        ...current,
+                        [selected.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="Add execution feedback…"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") addFeedback()
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={addFeedback}
+                    aria-label="Add feedback"
+                    disabled={!feedbackDrafts[selected.id]?.trim()}
+                  >
+                    <MessageSquareTextIcon />
+                  </Button>
+                </div>
+              ) : null}
             </section>
             <section>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase">
                 Attempt history
               </h3>
-              {selected.attempts?.length ? (
+              {selected.attempts.length ? (
                 <ol className="mt-3 space-y-3 border-l pl-4">
                   {selected.attempts.map((attempt) => (
-                    <li key={`${attempt.number}-${attempt.testedAt}`}>
+                    <li key={attempt.id}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">
                           Attempt {attempt.number}
@@ -767,28 +886,40 @@ export function ExecutionWorkspace({
               ) : null}
             </dl>
           </div>
-          <div className="sticky bottom-0 grid grid-cols-4 gap-2 border-t bg-background p-3">
-            {(["PASS", "FAIL", "BLOCKED", "SKIPPED"] as const).map((status) => {
-              const Icon = statusIcons[status]
-              return (
-                <Button
-                  key={status}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStatus(status)}
-                  aria-pressed={
-                    selected.status === status ||
-                    (status === "FAIL" && pendingFailureId === selected.id)
-                  }
-                  className={`${actionStyles[status]} ${selected.status === status || (status === "FAIL" && pendingFailureId === selected.id) ? "ring-2 ring-ring" : ""}`}
-                >
-                  <Icon data-icon="inline-start" />
-                  {status === "SKIPPED"
-                    ? "Skip"
-                    : status.charAt(0) + status.slice(1).toLocaleLowerCase()}
-                </Button>
-              )
-            })}
+          <div className="sticky bottom-0 border-t bg-background p-3">
+            {mode === "real" && !canMutate ? (
+              <p className="mb-3 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                You can view this run, but only assigned testers, QA leads, and
+                admins can record execution results.
+              </p>
+            ) : null}
+            <div className="grid grid-cols-4 gap-2">
+              {(["PASS", "FAIL", "BLOCKED", "SKIPPED"] as const).map(
+                (status) => {
+                  const Icon = statusIcons[status]
+                  return (
+                    <Button
+                      key={status}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStatus(status)}
+                      aria-pressed={
+                        selected.status === status ||
+                        (status === "FAIL" && pendingFailureId === selected.id)
+                      }
+                      disabled={mode === "real" && (!canMutate || isPending)}
+                      className={`${actionStyles[status]} ${selected.status === status || (status === "FAIL" && pendingFailureId === selected.id) ? "ring-2 ring-ring" : ""}`}
+                    >
+                      <Icon data-icon="inline-start" />
+                      {status === "SKIPPED"
+                        ? "Skip"
+                        : status.charAt(0) +
+                          status.slice(1).toLocaleLowerCase()}
+                    </Button>
+                  )
+                }
+              )}
+            </div>
           </div>
         </aside>
       </div>
@@ -798,7 +929,8 @@ export function ExecutionWorkspace({
           <SheetHeader className="border-b pr-12">
             <SheetTitle>Run history</SheetTitle>
             <SheetDescription>
-              Local attempt history for {run.name} · Build {run.build}
+              {mode === "demo" ? "Local" : "Persisted"} attempt history for{" "}
+              {runState.name} · Build {runState.build}
             </SheetDescription>
           </SheetHeader>
           <div className="qa-scrollbar flex-1 overflow-y-auto p-4">
@@ -806,7 +938,7 @@ export function ExecutionWorkspace({
               <ol className="space-y-4 border-l pl-4">
                 {runHistory.map((attempt) => (
                   <li
-                    key={`${attempt.executionId}-${attempt.number}-${attempt.testedAt}`}
+                    key={`${attempt.executionId}-${attempt.id}-${attempt.testedAt}`}
                   >
                     <p className="text-sm font-medium">{attempt.scenario}</p>
                     <div className="mt-1 flex items-center gap-2">
@@ -821,7 +953,7 @@ export function ExecutionWorkspace({
               </ol>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No attempts have been recorded for this mock run.
+                No attempts have been recorded for this run.
               </p>
             )}
           </div>

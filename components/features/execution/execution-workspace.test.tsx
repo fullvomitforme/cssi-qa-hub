@@ -1,15 +1,25 @@
 import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { ExecutionWorkspace } from "@/components/features/execution/execution-workspace"
 import { getTestRunDetail } from "@/lib/data/product-seed"
+import { buildDemoExecutionWorkspaceFromRun } from "@/lib/execution-adapters"
+
+vi.mock("@/app/actions/executions", () => ({
+  saveExecutionAction: vi.fn(),
+}))
 
 describe("ExecutionWorkspace", () => {
   it("requires failure details when a scenario is marked failed", () => {
     const run = getTestRunDetail("run-portal-regression")
     expect(run).toBeDefined()
 
-    render(<ExecutionWorkspace run={run!} initialExecutionId="e5" />)
+    render(
+      <ExecutionWorkspace
+        run={buildDemoExecutionWorkspaceFromRun(run!)}
+        initialExecutionId="e5"
+      />
+    )
 
     fireEvent.click(screen.getByRole("button", { name: "Fail" }))
 
