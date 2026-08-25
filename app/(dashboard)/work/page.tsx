@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import { QABoard } from "@/components/features/board/qa-board"
+import { shouldUseDemoData } from "@/lib/env"
+import { listBoardItems } from "@/services/board"
 
 export const metadata: Metadata = { title: "QA Board" }
 
@@ -13,6 +15,7 @@ export default async function WorkPage({
   }>
 }) {
   const query = await searchParams
+  const realItems = shouldUseDemoData() ? undefined : await listBoardItems()
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex items-start justify-between gap-4 border-b px-4 py-4 lg:px-6">
@@ -27,6 +30,8 @@ export default async function WorkPage({
       <QABoard
         initialItemId={typeof query.item === "string" ? query.item : undefined}
         initialCreateOpen={query.create === "true"}
+        initialItems={realItems}
+        mode={shouldUseDemoData() ? "demo" : "real"}
       />
     </main>
   )

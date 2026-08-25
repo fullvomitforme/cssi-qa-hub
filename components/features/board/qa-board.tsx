@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useTransition } from "react"
 import {
   CalendarDaysIcon,
   CheckCircle2Icon,
@@ -36,6 +36,7 @@ import {
   type BoardItem,
   type BoardStatus,
 } from "@/lib/data/product-seed"
+import { moveBoardItemAction, createBoardItemAction } from "@/app/actions/board"
 
 const labels: Record<BoardStatus, string> = {
   BACKLOG: "Backlog",
@@ -111,19 +112,29 @@ function WorkItemCard({
 export function QABoard({
   initialItemId,
   initialCreateOpen = false,
+  initialItems,
+  mode = "demo",
 }: {
   initialItemId?: string
   initialCreateOpen?: boolean
+  initialItems?: BoardItem[]
+  mode?: "demo" | "real"
 }) {
-  const [items, setItems] = useState<BoardItem[]>(initialBoardItems)
+  const [items, setItems] = useState<BoardItem[]>(
+    initialItems ?? initialBoardItems
+  )
   const [selected, setSelected] = useState<BoardItem | null>(
-    () => initialBoardItems.find((item) => item.id === initialItemId) ?? null
+    () =>
+      (initialItems ?? initialBoardItems).find(
+        (item) => item.id === initialItemId
+      ) ?? null
   )
   const [createOpen, setCreateOpen] = useState(initialCreateOpen)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [application, setApplication] = useState("all")
   const [priority, setPriority] = useState("all")
+  const [isPending, startTransition] = useTransition()
 
   const filteredItems = useMemo(
     () =>
@@ -142,6 +153,21 @@ export function QABoard({
   )
 
   function moveItem(id: string, status: BoardStatus) {
+    if (mode === "real") {
+      startTransition(async () => {
+        const result = await moveBoardItemAction(id, status)
+        if (result.status === "success") {
+          setItems((current) =>
+            current.map((item) => (item.id === id ? { ...item, status } : item))
+          )
+          setSelected((current) =>
+            current?.id === id ? { ...current, status } : current
+          )
+          window.location.reload()
+        }
+      })
+      return
+    }
     setItems((current) =>
       current.map((item) => (item.id === id ? { ...item, status } : item))
     )
@@ -170,6 +196,24 @@ export function QABoard({
       blocked: 0,
       untested: scenarioCount,
       status: "BACKLOG",
+    }
+    if (mode === "real") {
+      startTransition(async () => {
+        const result = await createBoardItemAction({
+          title: item.title,
+          feature: item.feature,
+          application: item.application,
+          priority: item.priority,
+          assignee: item.assignee,
+          due: item.due,
+          scenarios: item.scenarios,
+        })
+        if (result.status === "success") {
+          setCreateOpen(false)
+          window.location.reload()
+        }
+      })
+      return
     }
     setItems((current) => [item, ...current])
     setCreateOpen(false)
@@ -227,7 +271,11 @@ export function QABoard({
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
+        <Button
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+          disabled={mode === "real" && isPending}
+        >
           Add work item
         </Button>
       </div>
