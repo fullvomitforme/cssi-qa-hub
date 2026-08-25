@@ -438,19 +438,31 @@ with summary as (
     count(*) filter (where status = 'SKIPPED') as skipped,
     count(*) filter (where status = 'NOT_TESTED') as not_tested
   from public.test_executions
-), application_data as (
-  select jsonb_agg(jsonb_build_object(
-    'application', a.name, 'slug', a.slug,
-    'coverage', case when count(distinct s.id) = 0 then 0 else round(100.0 * count(distinct e.source_scenario_id) filter (where e.status <> 'NOT_TESTED') / count(distinct s.id), 1) end,
-    'passRate', case when count(e.id) filter (where e.status <> 'NOT_TESTED') = 0 then 0 else round(100.0 * count(e.id) filter (where e.status = 'PASS') / count(e.id) filter (where e.status <> 'NOT_TESTED'), 1) end,
-    'failed', count(e.id) filter (where e.status = 'FAIL'),
-    'blocked', count(e.id) filter (where e.status = 'BLOCKED'),
-    'notTested', greatest(count(distinct s.id) - count(distinct e.source_scenario_id) filter (where e.status <> 'NOT_TESTED'), 0)
-  ) order by a.name)
+), application_rows as (
+  select
+    a.name,
+    a.slug,
+    case when count(distinct s.id) = 0 then 0 else round(100.0 * count(distinct e.source_scenario_id) filter (where e.status <> 'NOT_TESTED') / count(distinct s.id), 1) end as coverage,
+    case when count(e.id) filter (where e.status <> 'NOT_TESTED') = 0 then 0 else round(100.0 * count(e.id) filter (where e.status = 'PASS') / count(e.id) filter (where e.status <> 'NOT_TESTED'), 1) end as pass_rate,
+    count(e.id) filter (where e.status = 'FAIL') as failed,
+    count(e.id) filter (where e.status = 'BLOCKED') as blocked,
+    greatest(count(distinct s.id) - count(distinct e.source_scenario_id) filter (where e.status <> 'NOT_TESTED'), 0) as not_tested
   from public.applications a
   left join public.test_scenarios s on s.application_id = a.id and s.is_active
   left join public.test_executions e on e.source_scenario_id = s.id
   where a.is_active
+  group by a.id, a.name, a.slug
+), application_data as (
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'application', name,
+    'slug', slug,
+    'coverage', coverage,
+    'passRate', pass_rate,
+    'failed', failed,
+    'blocked', blocked,
+    'notTested', not_tested
+  ) order by name), '[]'::jsonb) as data
+  from application_rows
 ), recent_runs as (
   select coalesce(jsonb_agg(row_data order by created_at desc), '[]'::jsonb) as data from (
     select r.created_at, jsonb_build_object(
@@ -493,7 +505,7 @@ select jsonb_build_object(
     jsonb_build_object('label','Blocked','value',s.blocked,'context','Waiting on dependency','tone','warning'),
     jsonb_build_object('label','Not Tested','value',greatest(s.total-s.tested,0),'context','Remaining coverage','tone','neutral')
   ),
-  'applications', coalesce(ad.jsonb_agg, '[]'::jsonb),
+  'applications', ad.data,
   'distribution', jsonb_build_array(
     jsonb_build_object('status','PASS','count',s.passed,'percentage',case when s.tested=0 then 0 else round(100.0*s.passed/s.tested,1) end),
     jsonb_build_object('status','FAIL','count',s.failed,'percentage',case when s.tested=0 then 0 else round(100.0*s.failed/s.tested,1) end),
