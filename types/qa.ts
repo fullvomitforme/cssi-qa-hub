@@ -398,6 +398,17 @@ export interface ExecutionFeedbackItem {
   createdAt: string
 }
 
+export interface ExecutionAttachmentItem {
+  id: string
+  storagePath: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  uploadedAt: string
+  uploadedBy: string
+  previewUrl: string | null
+}
+
 export interface ExecutionStepItem {
   id: string
   sourceStepId: string | null
@@ -428,6 +439,7 @@ export interface ExecutionItem {
   steps: ExecutionStepItem[]
   attempts: ExecutionAttemptItem[]
   feedback: ExecutionFeedbackItem[]
+  attachments: ExecutionAttachmentItem[]
 }
 
 export interface ExecutionWorkspaceRun {

@@ -19,6 +19,15 @@ import {
   saveExecutionAction,
   type SaveExecutionActionResult,
 } from "@/app/actions/executions"
+import {
+  deleteAttachmentAction,
+  registerAttachmentAction,
+} from "@/app/actions/attachments"
+import {
+  attachmentAcceptAttribute,
+  buildExecutionAttachmentPath,
+} from "@/lib/attachment-path"
+import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { SeverityBadge } from "@/components/domain/severity-badge"
 import { TestStatusBadge } from "@/components/domain/test-status-badge"
 import { Badge } from "@/components/ui/badge"
@@ -35,6 +44,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { calculateExecutionMetrics } from "@/lib/execution-metrics"
 import type {
+  ExecutionAttachmentItem,
   ExecutionFeedbackItem,
   ExecutionItem,
   ExecutionStatus,
@@ -70,6 +80,9 @@ type LocalEvidence = {
   filename: string
   size: number
   previewUrl: string
+  mimeType: string
+  storagePath?: string
+  uploading?: boolean
 }
 
 type ExecutionWorkspaceProps = {
@@ -86,6 +99,7 @@ function cloneExecution(execution: ExecutionItem): ExecutionItem {
     steps: execution.steps.map((step) => ({ ...step })),
     attempts: execution.attempts.map((attempt) => ({ ...attempt })),
     feedback: execution.feedback.map((item) => ({ ...item })),
+    attachments: execution.attachments.map((item) => ({ ...item })),
   }
 }
 
@@ -93,6 +107,17 @@ function cloneRun(run: ExecutionWorkspaceRun): ExecutionWorkspaceRun {
   return {
     ...run,
     executions: run.executions.map(cloneExecution),
+  }
+}
+
+function toEvidenceCard(item: ExecutionAttachmentItem): LocalEvidence {
+  return {
+    id: item.id,
+    filename: item.filename,
+    size: item.sizeBytes,
+    previewUrl: item.previewUrl ?? "",
+    mimeType: item.mimeType,
+    storagePath: item.storagePath,
   }
 }
 
@@ -127,6 +152,7 @@ export function ExecutionWorkspace({
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isUploadingEvidence, startEvidenceTransition] = useTransition()
 
   const executions = runState.executions
   const selected =
@@ -173,7 +199,13 @@ export function ExecutionWorkspace({
     return <p className="p-6 text-sm text-muted-foreground">No scenarios.</p>
   }
 
-  const selectedEvidence = evidence[selected.id] ?? []
+  const selectedEvidence =
+    mode === "real"
+      ? [
+          ...selected.attachments.map(toEvidenceCard),
+          ...(evidence[selected.id] ?? []),
+        ]
+      : (evidence[selected.id] ?? [])
   const failureDraftActive =
     selected.status === "FAIL" || pendingFailureId === selected.id
   const failureMissing = failureDraftActive
@@ -247,9 +279,16 @@ export function ExecutionWorkspace({
   }
 
   function addEvidence(files: FileList | null) {
-    if (mode !== "demo" || !files?.length) return
+    if (!files?.length) return
 
-    Array.from(files).forEach((file) => {
+    const nextFiles = Array.from(files)
+
+    if (mode === "real" && !canMutate) {
+      setSaveError("You do not have permission to upload evidence.")
+      return
+    }
+
+    nextFiles.forEach((file) => {
       const reader = new FileReader()
       reader.onload = () => {
         const previewUrl = reader.result
@@ -264,23 +303,119 @@ export function ExecutionWorkspace({
               filename: file.name,
               size: file.size,
               previewUrl,
+              mimeType: file.type,
+              uploading: mode === "real",
             },
           ],
         }))
       }
       reader.readAsDataURL(file)
     })
+
+    if (mode === "demo") return
+
+    setSaveError(null)
+    setSaveMessage(null)
+
+    startEvidenceTransition(async () => {
+      const supabase = createBrowserSupabaseClient()
+
+      for (const file of nextFiles) {
+        const storagePath = buildExecutionAttachmentPath(selected.id, file.name)
+        const tempId = `evidence-${selected.id}-${file.name}-${file.lastModified}`
+
+        setEvidence((current) => ({
+          ...current,
+          [selected.id]: (current[selected.id] ?? []).map((item) =>
+            item.id === tempId ? { ...item, storagePath } : item
+          ),
+        }))
+
+        const { error: uploadError } = await supabase.storage
+          .from("qa-evidence")
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            contentType: file.type || undefined,
+            upsert: false,
+          })
+
+        if (uploadError) {
+          setSaveError(`Unable to upload ${file.name}: ${uploadError.message}`)
+          setEvidence((current) => ({
+            ...current,
+            [selected.id]: (current[selected.id] ?? []).filter(
+              (item) => item.id !== tempId
+            ),
+          }))
+          continue
+        }
+
+        const result = await registerAttachmentAction({
+          runId: runState.id,
+          executionId: selected.id,
+          storagePath,
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          sizeBytes: file.size,
+        })
+
+        if (result.status === "success" && result.run) {
+          setRunState(cloneRun(result.run))
+          setSaveMessage(result.message ?? `${file.name} uploaded.`)
+          setEvidence((current) => ({
+            ...current,
+            [selected.id]: (current[selected.id] ?? []).filter(
+              (item) => item.id !== tempId
+            ),
+          }))
+          continue
+        }
+
+        setSaveError(result.message ?? `Unable to register ${file.name}.`)
+        await supabase.storage.from("qa-evidence").remove([storagePath])
+        setEvidence((current) => ({
+          ...current,
+          [selected.id]: (current[selected.id] ?? []).filter(
+            (item) => item.id !== tempId
+          ),
+        }))
+      }
+    })
   }
 
   function removeEvidence(id: string) {
-    if (mode !== "demo") return
+    if (mode === "demo") {
+      setEvidence((current) => ({
+        ...current,
+        [selected.id]: (current[selected.id] ?? []).filter(
+          (item) => item.id !== id
+        ),
+      }))
+      return
+    }
 
-    setEvidence((current) => ({
-      ...current,
-      [selected.id]: (current[selected.id] ?? []).filter(
-        (item) => item.id !== id
-      ),
-    }))
+    if (!canMutate) {
+      setSaveError("You do not have permission to remove evidence.")
+      return
+    }
+
+    setSaveError(null)
+    setSaveMessage(null)
+
+    startEvidenceTransition(async () => {
+      const result = await deleteAttachmentAction({
+        runId: runState.id,
+        attachmentId: id,
+      })
+
+      if (result.status === "success" && result.run) {
+        setRunState(cloneRun(result.run))
+        setSaveMessage(result.warning ?? result.message ?? "Evidence removed.")
+        return
+      }
+
+      setSaveError(result.message ?? "Unable to remove this attachment.")
+    })
   }
 
   async function persistExecution(
@@ -694,7 +829,23 @@ export function ExecutionWorkspace({
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase">
                   Evidence
                 </h3>
-                {mode === "demo" ? (
+                {mode === "real" && canMutate ? (
+                  <label className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-medium hover:bg-muted">
+                    <FileImageIcon className="size-3" />
+                    {isUploadingEvidence ? "Uploading…" : "Add evidence"}
+                    <input
+                      type="file"
+                      accept={attachmentAcceptAttribute}
+                      multiple
+                      className="sr-only"
+                      disabled={isUploadingEvidence}
+                      onChange={(event) => {
+                        addEvidence(event.target.files)
+                        event.target.value = ""
+                      }}
+                    />
+                  </label>
+                ) : mode === "demo" ? (
                   <label className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-medium hover:bg-muted">
                     <FileImageIcon className="size-3" />
                     Add evidence
@@ -711,27 +862,32 @@ export function ExecutionWorkspace({
                   </label>
                 ) : null}
               </div>
-              {mode === "real" ? (
-                <p className="mt-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                  Evidence uploads are connected in the next phase.
-                </p>
-              ) : selectedEvidence.length ? (
+              {selectedEvidence.length ? (
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {selectedEvidence.map((item) => (
                     <div
                       key={item.id}
                       className="overflow-hidden rounded-md border"
                     >
-                      <div className="relative aspect-video bg-muted/30">
-                        <Image
-                          src={item.previewUrl}
-                          alt={`Evidence preview for ${item.filename}`}
-                          fill
-                          sizes="(min-width: 1024px) 240px, 50vw"
-                          unoptimized
-                          className="object-cover"
-                        />
-                      </div>
+                      {item.mimeType.startsWith("image/") && item.previewUrl ? (
+                        <div className="relative aspect-video bg-muted/30">
+                          <Image
+                            src={item.previewUrl}
+                            alt={`Evidence preview for ${item.filename}`}
+                            fill
+                            sizes="(min-width: 1024px) 240px, 50vw"
+                            unoptimized
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-muted/20 p-3 text-center">
+                          <FileImageIcon className="size-6 text-muted-foreground" />
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {item.filename}
+                          </p>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 p-2">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-xs font-medium">
@@ -739,19 +895,68 @@ export function ExecutionWorkspace({
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatFileSize(item.size)}
+                            {item.uploading ? " · Uploading…" : ""}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => removeEvidence(item.id)}
-                          aria-label={`Remove ${item.filename}`}
-                        >
-                          <Trash2Icon />
-                        </Button>
+                        {item.previewUrl ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            render={
+                              <a
+                                href={item.previewUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              />
+                            }
+                            aria-label={`Open ${item.filename}`}
+                          >
+                            <FileImageIcon />
+                          </Button>
+                        ) : null}
+                        {mode === "demo" || canMutate ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeEvidence(item.id)}
+                            aria-label={`Remove ${item.filename}`}
+                            disabled={
+                              item.uploading ||
+                              (mode === "real" && isUploadingEvidence)
+                            }
+                          >
+                            <Trash2Icon />
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : mode === "real" && canMutate ? (
+                <label className="mt-2 flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground hover:bg-accent">
+                  <FileImageIcon className="mb-1 size-5" />
+                  Select evidence
+                  <span className="mt-1">
+                    Images, PDFs, text, JSON, CSV, or MP4 up to 50 MB
+                  </span>
+                  <input
+                    type="file"
+                    accept={attachmentAcceptAttribute}
+                    className="sr-only"
+                    disabled={isUploadingEvidence}
+                    onChange={(event) => {
+                      addEvidence(event.target.files)
+                      event.target.value = ""
+                    }}
+                  />
+                </label>
+              ) : mode === "real" ? (
+                <div className="mt-2 flex aspect-video flex-col items-center justify-center rounded-md border border-dashed text-center text-xs text-muted-foreground">
+                  <FileImageIcon className="mb-1 size-5" />
+                  No evidence attached
+                  <span className="mt-1">
+                    You have read-only access to this execution.
+                  </span>
                 </div>
               ) : (
                 <label className="mt-2 flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground hover:bg-accent">

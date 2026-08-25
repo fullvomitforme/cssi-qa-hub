@@ -55,6 +55,16 @@ type ExecutionAttemptRow = {
   executed_at: string
 }
 
+type ExecutionAttachmentRow = {
+  id: string
+  storage_path: string
+  filename: string
+  mime_type: string
+  size_bytes: number
+  uploaded_at: string
+  uploaded_profile: ExecutionProfileRow
+}
+
 export type RunExecutionWorkspaceRow = {
   id: string
   name: string
@@ -97,6 +107,7 @@ export type RunExecutionWorkspaceRow = {
     source_scenario: ExecutionScenarioRow | null
     test_execution_steps: ExecutionStepRow[]
     test_execution_attempts: ExecutionAttemptRow[]
+    attachments: ExecutionAttachmentRow[]
   }>
 }
 
@@ -175,6 +186,7 @@ function toMockExecutionItem(execution: MockExecution): ExecutionItem {
       bugReference: execution.bugReference,
     })),
     feedback: toFeedbackItems(execution),
+    attachments: [],
   }
 }
 
@@ -255,6 +267,16 @@ export function mapRunExecutionWorkspaceRow(
         .sort((left, right) => left.attempt_number - right.attempt_number)
         .map(toAttemptItem),
       feedback: [],
+      attachments: execution.attachments.map((attachment) => ({
+        id: attachment.id,
+        storagePath: attachment.storage_path,
+        filename: attachment.filename,
+        mimeType: attachment.mime_type,
+        sizeBytes: attachment.size_bytes,
+        uploadedAt: formatDateTime(attachment.uploaded_at),
+        uploadedBy: attachment.uploaded_profile?.full_name ?? "Unknown",
+        previewUrl: null,
+      })),
     }))
 
   const metrics = calculateExecutionMetrics(executions)

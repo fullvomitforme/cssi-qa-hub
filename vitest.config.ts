@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": projectRoot,
+      "server-only": path.join(projectRoot, "vitest.server-only.ts"),
     },
   },
   test: {

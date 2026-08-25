@@ -9,6 +9,8 @@ import { shouldUseDemoData } from "@/lib/env"
 import { createClient } from "@/lib/supabase/server"
 import type { ExecutionSaveInput, ExecutionWorkspaceRun } from "@/types/qa"
 
+const EVIDENCE_BUCKET = "qa-evidence"
+
 export class ExecutionMutationError extends Error {
   constructor(
     message: string,
@@ -30,7 +32,7 @@ export async function getRunExecutionWorkspace(
   const { data, error } = await supabase
     .from("test_runs")
     .select(
-      "id,name,status,build,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_run_assignments(profiles!inner(full_name,role)),test_executions(id,source_scenario_id,scenario_title,scenario_description,scenario_preconditions,scenario_expected_result,scenario_priority,scenario_type,status,actual_result,failure_reason,severity,bug_reference,tested_at,tested_profile:profiles!test_executions_tested_by_fkey(full_name),source_scenario:test_scenarios!test_executions_source_scenario_id_fkey(modules!inner(name)),test_execution_steps(id,source_step_id,position,instruction,expected_result,status,actual_result),test_execution_attempts(id,attempt_number,status,build,actual_result,failure_reason,severity,bug_reference,executed_at))"
+      "id,name,status,build,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_run_assignments(profiles!inner(full_name,role)),test_executions(id,source_scenario_id,scenario_title,scenario_description,scenario_preconditions,scenario_expected_result,scenario_priority,scenario_type,status,actual_result,failure_reason,severity,bug_reference,tested_at,tested_profile:profiles!test_executions_tested_by_fkey(full_name),source_scenario:test_scenarios!test_executions_source_scenario_id_fkey(modules!inner(name)),test_execution_steps(id,source_step_id,position,instruction,expected_result,status,actual_result),test_execution_attempts(id,attempt_number,status,build,actual_result,failure_reason,severity,bug_reference,executed_at),attachments(id,storage_path,filename,mime_type,size_bytes,uploaded_at,uploaded_profile:profiles!attachments_uploaded_by_fkey(full_name)))"
     )
     .eq("id", runId)
     .single()
@@ -43,9 +45,50 @@ export async function getRunExecutionWorkspace(
     throw new Error(`Unable to load execution workspace: ${error.message}`)
   }
 
-  return mapRunExecutionWorkspaceRow(
+  const workspace = mapRunExecutionWorkspaceRow(
     data as unknown as RunExecutionWorkspaceRow
   )
+
+  const signedAttachments = await Promise.all(
+    workspace.executions.flatMap((execution) =>
+      execution.attachments.map(async (attachment) => {
+        const { data: signedUrlData, error: signedUrlError } =
+          await supabase.storage
+            .from(EVIDENCE_BUCKET)
+            .createSignedUrl(attachment.storagePath, 3600)
+
+        if (signedUrlError) {
+          console.error(
+            "Unable to sign attachment URL",
+            attachment.storagePath,
+            signedUrlError
+          )
+        }
+
+        return {
+          executionId: execution.id,
+          attachmentId: attachment.id,
+          previewUrl: signedUrlData?.signedUrl ?? null,
+        }
+      })
+    )
+  )
+
+  return {
+    ...workspace,
+    executions: workspace.executions.map((execution) => ({
+      ...execution,
+      attachments: execution.attachments.map((attachment) => ({
+        ...attachment,
+        previewUrl:
+          signedAttachments.find(
+            (signed) =>
+              signed.executionId === execution.id &&
+              signed.attachmentId === attachment.id
+          )?.previewUrl ?? null,
+      })),
+    })),
+  }
 }
 
 export async function saveExecutionRecord(

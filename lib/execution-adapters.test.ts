@@ -53,6 +53,7 @@ describe("mapRunExecutionWorkspaceRow", () => {
               name: "Authentication",
             },
           },
+          attachments: [],
           test_execution_steps: [
             {
               id: "step-2",
@@ -115,6 +116,7 @@ describe("mapRunExecutionWorkspaceRow", () => {
           tested_at: null,
           tested_profile: null,
           source_scenario: null,
+          attachments: [],
           test_execution_steps: [],
           test_execution_attempts: [],
         },
