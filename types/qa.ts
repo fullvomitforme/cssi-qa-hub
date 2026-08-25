@@ -161,6 +161,116 @@ export interface ScenarioFormValues {
   tags: string[]
 }
 
+export type PlanStatus = "DRAFT" | "READY" | "ACTIVE" | "COMPLETED" | "ARCHIVED"
+
+export interface PlanSummary {
+  id: string
+  name: string
+  application: string
+  applicationSlug: string
+  release: string
+  environment: string
+  owner: string
+  scenarioCount: number
+  progress: number | null
+  status: PlanStatus
+  targetDate: string | null
+}
+
+export interface PlanScenarioItem {
+  id: string
+  scenarioId: string
+  title: string
+  application: string
+  module: string
+  feature: string
+  priority: Priority
+  type: TestType
+  position: number
+}
+
+export interface PlanAssignment {
+  profileId: string
+  fullName: string
+  email: string
+  role: UserRole
+  assignedAt: string
+}
+
+export interface PlanDetail extends PlanSummary {
+  applicationId: string
+  releaseId: string
+  environmentId: string
+  ownerId: string
+  description: string
+  startDate: string | null
+  targetCompletion: string | null
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  updatedBy: string
+  scenarios: PlanScenarioItem[]
+  assignments: PlanAssignment[]
+}
+
+export interface PlanQuery {
+  search?: string
+  status?: PlanStatus
+}
+
+export interface PlanReferenceOption {
+  id: string
+  name: string
+  slug?: string
+}
+
+export interface PlanReleaseOption {
+  id: string
+  applicationId: string
+  environmentId: string
+  version: string
+  build: string | null
+  status: ManagementReleaseItem["status"]
+}
+
+export interface PlanProfileOption {
+  id: string
+  fullName: string
+  email: string
+  role: UserRole
+}
+
+export interface PlanReferences {
+  applications: PlanReferenceOption[]
+  environments: PlanReferenceOption[]
+  releases: PlanReleaseOption[]
+  ownerOptions: PlanProfileOption[]
+  assigneeOptions: PlanProfileOption[]
+}
+
+export interface PlanFormValues {
+  name: string
+  applicationId: string
+  releaseId: string
+  environmentId: string
+  ownerId: string
+  description: string
+  startDate: string
+  targetCompletion: string
+  status: PlanStatus
+  scenarioIds: string[]
+  assignmentProfileIds: string[]
+}
+
+export interface PlanScenarioQuery {
+  applicationId?: string
+  module?: string
+  feature?: string
+  priority?: Priority
+  search?: string
+  type?: TestType
+}
+
 export interface OverviewMetric {
   label: string
   value: number
