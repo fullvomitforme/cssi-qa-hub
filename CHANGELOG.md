@@ -6,13 +6,27 @@ All notable changes to CSSI QA Hub will be documented in this file.
 
 ### Added
 
-- Initial Linear-inspired QA interface design
-- Demo/mock workflow implementation
-- Basic frontend routing and navigation
+- **Manual QA Scenario Catalogs** — Source-of-truth Markdown catalogs for all six CSSI applications (330 scenarios across Portal, CRM, Flowra, Daily Operation, ITQM, Intranet). Each catalog includes:
+  - Business-readable scenario steps and expected results
+  - Stable scenario IDs (`QA-<APP>-<MODULE>-<NNN>`)
+  - Priority classification (Critical / High / Medium / Low)
+  - Category classification (Happy Path / Validation / Permission / Negative / Edge Case / Integration)
+  - Implementation Status per module (READY / LIMITED / MOCK / STUB)
+  - Coverage gaps and known limitations
+- **QA Catalog Review Report** — `docs/qa-scenarios/REVIEW.md` documenting the review pass: priority normalization, technical term removal, missing Category sections fixed, intranet catalog created (was missing from initial generation)
+- **README with lifecycle statuses** — DRAFT → REVIEWED → READY FOR IMPORT progression for each application catalog
 
 ### Changed
 
-- Refined UI based on user feedback
+- **Scenario ID integrity verified** — No duplicate IDs across all 330 scenarios
+- **Priority distribution normalized** — Critical reserved for auth failures, security bypasses, and destructive workflow blockers; 22 permission-denial scenarios demoted from Critical to High
+- **Technical terminology removed** — Module codes (`IT_CHECK_DAILY`, `FLOWRA_OA_PROCESS`, `ITQM_DEVELOPMENT`, etc.) replaced with user-friendly descriptions in preconditions and steps
+- **Missing Category sections added** — 9 scenarios across Portal, CRM, Flowra, Daily Operation, and ITQM now have proper Category fields
+- **Implementation Status metadata added** — Each catalog documents READY / LIMITED / MOCK / STUB features so QA testers know what is executable
+
+### Security
+
+- No changes to existing security posture
 
 ---
 

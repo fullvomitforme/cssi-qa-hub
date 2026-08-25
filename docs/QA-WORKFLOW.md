@@ -42,6 +42,39 @@ Your role determines what you can do:
 
 Scenarios are reusable test definitions. They contain steps, expected results, and metadata.
 
+### Source of Truth: Markdown Catalog
+
+Before importing into QA Hub, all scenarios live as reviewed Markdown files in `docs/qa-scenarios/`. Each application has its own catalog file:
+
+| File | Application | Scenarios |
+| ---- | ----------- | --------: |
+| [`portal.md`](../qa-scenarios/portal.md) | Portal — Auth, users, roles, switcher, notifications | 60 |
+| [`crm.md`](../qa-scenarios/crm.md) | CRM — Accounts, contacts, leads, prospects, stock | 57 |
+| [`flowra.md`](../qa-scenarios/flowra.md) | Flowra — Opening Account workflow | 73 |
+| [`daily-operation.md`](../qa-scenarios/daily-operation.md) | Daily Operation — Today, approvals, history | 36 |
+| [`itqm.md`](../qa-scenarios/itqm.md) | ITQM — Dev requests, issues, config | 54 |
+| [`intranet.md`](../qa-scenarios/intranet.md) | Intranet — Announcements, regulations, admin | 50 |
+
+**Total: 330 scenarios across 6 applications.**
+
+All scenarios are currently in **DRAFT** status and must be reviewed against the live system before import. See [`docs/qa-scenarios/README.md`](../qa-scenarios/README.md) for usage guidance and [`docs/qa-scenarios/REVIEW.md`](../qa-scenarios/REVIEW.md) for the review report.
+
+### Importing Scenarios from Catalog
+
+Use the Admin import flow to bulk-create scenarios from the Markdown catalogs:
+
+1. Navigate to **Management** → **Scenarios**
+2. Click **Import from Catalog** (or use the CSV/Markdown import wizard)
+3. Select the application and catalog file (`docs/qa-scenarios/<app>.md`)
+4. Review the preview — each scenario maps to: title, description, priority, category, tags
+5. Confirm import — scenarios are created with steps extracted from the catalog
+6. Verify a sample of imported scenarios against the live system
+
+**Import notes:**
+- All 330 scenarios are DRAFT — do not import all at once. Import per-application as QA Leads validate them.
+- After import, update the catalog status from DRAFT → REVIEWED in `docs/qa-scenarios/README.md`.
+- Do not re-import into an existing app unless you clear old scenarios first (to avoid duplicates).
+
 ### Creating a Scenario (QA Lead/Admin)
 
 1. Navigate to **Scenarios** → **New Scenario**

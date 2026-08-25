@@ -151,7 +151,42 @@ Verifies:
 - [ ] Report generation works
 - [ ] Overview metrics accurate
 
-## Performance Testing
+## Manual QA Scenario Catalog
+
+The `docs/qa-scenarios/` directory contains the source-of-truth manual test scenario catalogs for all six CSSI applications. These Markdown files are the **input** for scenario import into QA Hub — they are not executed directly from disk.
+
+### Scenarios by Application
+
+| Application | Scenarios | Status | READY | LIMITED | MOCK | STUB |
+| ----------- | --------: | :----: | ----: | -----: | ---: | ---: |
+| Portal | 60 | DRAFT | ✅ All | Username/avatar upload disabled | — | — |
+| CRM | 57 | DRAFT | ✅ Core | Trading modules (mock data) | — | Lead duplicate detection, subscriptions |
+| Flowra | 73 | DRAFT | ✅ OA workflow | Spouse hydration limitation | — | Compliance, CSO, Purchase, Risk, Settlement |
+| Daily Operation | 36 | DRAFT | ✅ Today/Approvals/History/Config | Draft persistence local-only | — | Settlement/Risk divisions (unconfigured) |
+| ITQM | 54 | DRAFT | ✅ Dev Request/Done Report/Config | Attachment upload (console only) | Issue Phase 1 | — |
+| Intranet | 50 | DRAFT | ✅ Full | Attachment upload needs verification | — | — |
+| **Total** | **330** | | | | | |
+
+### Catalog Structure
+
+Each scenario follows this format:
+- **ID** — Stable identifier (`QA-<APP>-<MODULE>-<NNN>`)
+- **Purpose** — Why the test matters
+- **Preconditions** — What must be true before testing
+- **Steps** — Numbered actions the tester performs
+- **Expected Result** — Observable outcomes
+- **Priority** — Critical / High / Medium / Low
+- **Category** — Happy Path / Validation / Permission / Negative / Edge Case / Integration
+- **Implementation Status** — READY / LIMITED / MOCK / STUB per module
+
+### Usage Workflow
+
+1. **Read** the catalog in `docs/qa-scenarios/<app>.md`
+2. **Execute** scenarios against the live system (Critical → High → Medium → Low)
+3. **Record** results in QA Hub by importing scenarios via Admin → Scenarios → Import
+4. **Update** catalog status from DRAFT → REVIEWED once validated
+
+See [`docs/qa-scenarios/README.md`](./qa-scenarios/README.md) and [`docs/qa-scenarios/REVIEW.md`](./qa-scenarios/REVIEW.md) for full details.
 
 ### Database Queries
 

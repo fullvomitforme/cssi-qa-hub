@@ -412,6 +412,33 @@ Verified domains:
 - Overview metrics with filtering
 - Demo mode
 
+## Scenario Catalog (Manual QA)
+
+The `docs/qa-scenarios/` directory contains the source-of-truth manual test scenario catalogs for all six CSSI applications. These are **not yet imported** into the database — they are reviewed Markdown files that QA Leads use as the reference before importing scenarios via the QA Hub UI.
+
+### Coverage Summary
+
+| Application | Scenarios | Status | READY | LIMITED | MOCK | STUB |
+| ----------- | --------: | :----: | ----: | -----: | ---: | ---: |
+| Portal | 60 | DRAFT | ✅ All | Username/avatar upload disabled | — | — |
+| CRM | 57 | DRAFT | ✅ Core | Trading modules (mock data) | — | Lead duplicate detection, subscriptions |
+| Flowra | 73 | DRAFT | ✅ OA workflow | Spouse hydration limitation | — | Compliance, CSO, Purchase, Risk, Settlement |
+| Daily Operation | 36 | DRAFT | ✅ Today/Approvals/History/Config | Draft persistence local-only | — | Settlement/Risk divisions (unconfigured) |
+| ITQM | 54 | DRAFT | ✅ Dev Request/Done Report/Config | Attachment upload (console only) | Issue Phase 1 | — |
+| Intranet | 50 | DRAFT | ✅ Full | Attachment upload needs verification | — | — |
+| **Total** | **330** | | | | | |
+
+### How to Use
+
+1. **Read the catalog** in `docs/qa-scenarios/<app>.md` for the application you're testing.
+2. **Check Implementation Status** — notes on READY / LIMITED / MOCK / STUB features.
+3. **Execute scenarios in priority order** — Critical → High → Medium → Low.
+4. **Record Pass/Fail/Blocked** results and reference scenario IDs in bug reports.
+5. **Update status** from DRAFT to REVIEWED once validated against the live system.
+6. **Import into QA Hub** via the UI when ready (Admin → Scenarios → Import from catalog).
+
+See [`docs/qa-scenarios/README.md`](./docs/qa-scenarios/README.md) for detailed usage guidance.
+
 ## Known Limitations
 
 - **Sidebar visual polish** — deferred; functional layout is complete
