@@ -120,7 +120,7 @@ async function buildSnapshot(
   const { data, error } = await supabase
     .from("test_runs")
     .select(
-      "id,build,started_at,completed_at,applications(name),environments(name),releases(version),test_run_assignments(profiles(full_name)),test_executions(scenario_title,scenario_description,scenario_expected_result,status,actual_result,failure_reason,severity,bug_reference,source_scenario:test_scenarios(modules(name)))"
+      "id,build,started_at,completed_at,applications(name),environments(name),releases(version),test_run_assignments(profile_id,assigned_by,profiles!test_run_assignments_profile_id_fkey(full_name)),test_executions(scenario_title,scenario_description,scenario_expected_result,status,actual_result,failure_reason,severity,bug_reference,source_scenario:test_scenarios(modules(name)))"
     )
     .eq("id", runId)
     .single()

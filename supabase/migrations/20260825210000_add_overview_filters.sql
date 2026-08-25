@@ -14,7 +14,7 @@ set search_path = ''
 as $$
 with
 exec_filter as (
-  select id, test_run_id, source_scenario_id, status, tested_at
+  select id, test_run_id, source_scenario_id, scenario_title, status, tested_at
   from public.test_executions e
   where
     (filter_release_id is null or e.test_run_id in (

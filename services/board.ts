@@ -36,7 +36,7 @@ export async function listBoardItems(): Promise<BoardItem[]> {
   const { data: items, error: itemsError } = await supabase
     .from("qa_work_items")
     .select(
-      "id,title,priority,status,due_at,applications(name),features(name),releases(version),environments(name),qa_work_item_assignments(profiles(full_name)),test_run_id"
+      "id,title,priority,status,due_at,applications(name),features(name),releases(version),environments(name),qa_work_item_assignments(profile_id,assigned_by,profiles!qa_work_item_assignments_profile_id_fkey(full_name)),test_run_id"
     )
     .order("created_at", { ascending: false })
   if (itemsError)

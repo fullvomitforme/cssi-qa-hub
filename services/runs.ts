@@ -65,7 +65,7 @@ export async function listRuns(query: RunQuery): Promise<RunSummary[]> {
   let request = supabase
     .from("test_runs")
     .select(
-      "id,name,test_plan_id,build,status,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_plans!inner(name),test_run_assignments(profiles!inner(full_name)),test_executions(status)"
+      "id,name,test_plan_id,build,status,started_at,completed_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_plans!inner(name),test_run_assignments(profile_id,assigned_by,profiles!test_run_assignments_profile_id_fkey(full_name)),test_executions(status)"
     )
     .order("started_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -130,7 +130,7 @@ export async function getRun(runId: string): Promise<RunDetail | null> {
   const { data, error } = await supabase
     .from("test_runs")
     .select(
-      "id,name,test_plan_id,build,status,started_at,completed_at,application_id,release_id,environment_id,created_at,updated_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_plans!inner(name),created_profile:profiles!test_runs_created_by_fkey(full_name),updated_profile:profiles!test_runs_updated_by_fkey(full_name),test_run_assignments(assigned_at,profiles!inner(id,full_name,email,role)),test_executions(id,source_scenario_id,scenario_title,scenario_priority,scenario_type,status)"
+      "id,name,test_plan_id,build,status,started_at,completed_at,application_id,release_id,environment_id,created_at,updated_at,applications!inner(name,slug),environments!inner(name),releases!inner(version),test_plans!inner(name),created_profile:profiles!test_runs_created_by_fkey(full_name),updated_profile:profiles!test_runs_updated_by_fkey(full_name),test_run_assignments(assigned_at,profile_id,profiles!test_run_assignments_profile_id_fkey(id,full_name,email,role)),test_executions(id,source_scenario_id,scenario_title,scenario_priority,scenario_type,status)"
     )
     .eq("id", runId)
     .single()

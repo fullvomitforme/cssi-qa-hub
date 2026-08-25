@@ -146,7 +146,7 @@ export async function getPlan(planId: string): Promise<PlanDetail | null> {
   const { data, error } = await supabase
     .from("test_plans")
     .select(
-      "id,name,description,start_date,target_completion,status,created_at,updated_at,application_id,release_id,environment_id,owner_id,applications!inner(name,slug),environments!inner(name),releases!inner(version),owner_profile:profiles!test_plans_owner_id_fkey(full_name),created_profile:profiles!test_plans_created_by_fkey(full_name),updated_profile:profiles!test_plans_updated_by_fkey(full_name),test_plan_items(id,position,test_scenarios!inner(id,title,priority,test_type,applications!inner(name),modules!inner(name),features!inner(name))),test_plan_assignments(assigned_at,profiles!inner(id,full_name,email,role))"
+      "id,name,description,start_date,target_completion,status,created_at,updated_at,application_id,release_id,environment_id,owner_id,applications!inner(name,slug),environments!inner(name),releases!inner(version),owner_profile:profiles!test_plans_owner_id_fkey(full_name),created_profile:profiles!test_plans_created_by_fkey(full_name),updated_profile:profiles!test_plans_updated_by_fkey(full_name),test_plan_items(id,position,test_scenarios!inner(id,title,priority,test_type,applications!inner(name),modules!inner(name),features!inner(name))),test_plan_assignments(assigned_at,profile_id,profiles!test_plan_assignments_profile_id_fkey(id,full_name,email,role))"
     )
     .eq("id", planId)
     .single()
