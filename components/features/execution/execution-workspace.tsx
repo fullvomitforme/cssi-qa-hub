@@ -1037,9 +1037,7 @@ export function ExecutionWorkspace({
                 </div>
               ) : (
                 <p className="mt-2 rounded-md border p-3 text-sm text-muted-foreground">
-                  {mode === "real"
-                    ? "Feedback persistence is connected in the findings phase."
-                    : "No feedback recorded for this execution."}
+                  No feedback recorded for this execution.
                 </p>
               )}
               {mode === "demo" || canMutate ? (

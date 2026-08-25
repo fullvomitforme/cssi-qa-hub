@@ -315,8 +315,9 @@ export function ReportList({
                 </label>
               </div>
               <p className="text-xs text-muted-foreground">
-                Server PDF generation and persistence are intentionally
-                deferred.
+                {mode === "real"
+                  ? "The finalized snapshot and private PDF are stored in Supabase."
+                  : "Server PDF generation and persistence are intentionally deferred."}
               </p>
             </div>
             <SheetFooter className="border-t">
