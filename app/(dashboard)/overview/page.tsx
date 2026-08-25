@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { CalendarDaysIcon, FileOutputIcon } from "lucide-react"
+import { FileOutputIcon } from "lucide-react"
 
 import { AppProgressTable } from "@/components/features/overview/app-progress-table"
 import { BoardPreview } from "@/components/features/overview/board-preview"
@@ -14,14 +14,40 @@ import { RecentTestRuns } from "@/components/features/overview/recent-test-runs"
 import { TopFailuresTable } from "@/components/features/overview/top-failures-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { getOverviewData } from "@/services/overview"
 import { shouldUseDemoData } from "@/lib/env"
 
 export const metadata: Metadata = { title: "Overview" }
 
-export default async function OverviewPage() {
-  const data = await getOverviewData()
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    release?: string
+    environment?: string
+    from?: string
+    to?: string
+  }>
+}) {
+  const query = await searchParams
+  const data = await getOverviewData({
+    releaseId: query.release || undefined,
+    environmentId: query.environment || undefined,
+    startDate: query.from || undefined,
+    endDate: query.to || undefined,
+  })
   const demoMode = shouldUseDemoData()
+
+  const allReleases = data.recentRuns
+    .map((run: { id: string; name: string }) => run.name)
+    .filter((name): name is string => Boolean(name))
+  const allEnvironments = data.recentRuns
+    .map(
+      (run: { id: string; name: string; environment?: string | null }) =>
+        run.environment
+    )
+    .filter((env): env is string => Boolean(env))
 
   return (
     <main className="flex min-w-0 flex-col gap-4 p-4 lg:p-6">
@@ -37,47 +63,50 @@ export default async function OverviewPage() {
             <span className="text-muted-foreground">Release</span>
             <select
               aria-label="Release"
-              defaultValue={demoMode ? "v1.9.0" : "All releases"}
-              disabled
-              title={
-                demoMode
-                  ? "The current mock dashboard contains one v1.9.0 snapshot."
-                  : "The dashboard RPC currently returns all persisted releases."
-              }
+              defaultValue={query.release ?? ""}
+              title="Filter by release version"
               className="bg-transparent font-medium"
             >
-              <option>{demoMode ? "v1.9.0" : "All releases"}</option>
+              <option value="">All releases</option>
+              {allReleases.map((r: string) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
             </select>
           </label>
           <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
             <span className="text-muted-foreground">Environment</span>
             <select
               aria-label="Environment"
-              defaultValue={demoMode ? "UAT" : "All environments"}
-              disabled
-              title={
-                demoMode
-                  ? "The current mock dashboard contains one UAT snapshot."
-                  : "The dashboard RPC currently returns all persisted environments."
-              }
+              defaultValue={query.environment ?? ""}
+              title="Filter by environment"
               className="bg-transparent font-medium"
             >
-              <option>{demoMode ? "UAT" : "All environments"}</option>
+              <option value="">All environments</option>
+              {allEnvironments.map((e: string) => (
+                <option key={e} value={e}>{e}</option>
+              ))}
             </select>
           </label>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            title={
-              demoMode
-                ? "The mock snapshot covers Aug 19–Aug 25, 2026."
-                : "Date filtering is not exposed by the deployed dashboard RPC."
-            }
-          >
-            <CalendarDaysIcon data-icon="inline-start" />
-            Aug 19 – Aug 25, 2026
-          </Button>
+          <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
+            <span className="text-muted-foreground">From</span>
+            <Input
+              type="date"
+              defaultValue={query.from}
+              aria-label="Start date"
+              title="Filter from date"
+              className="h-6 border-0 bg-transparent px-0 shadow-none"
+            />
+          </label>
+          <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
+            <span className="text-muted-foreground">To</span>
+            <Input
+              type="date"
+              defaultValue={query.to}
+              aria-label="End date"
+              title="Filter to date"
+              className="h-6 border-0 bg-transparent px-0 shadow-none"
+            />
+          </label>
           <Button
             variant="inverse"
             size="sm"
