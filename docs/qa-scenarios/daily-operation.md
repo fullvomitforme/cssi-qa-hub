@@ -23,7 +23,7 @@ Daily Operation is an operational workspace application for managing daily check
 Confirm that the Today page displays the user's daily checklist items organized by task and part.
 
 **Preconditions**
-- User has IT_CHECK_DAILY READ permission.
+- User has the Today operation permission.
 - Tasks, parts, and items have been configured.
 
 **Steps**
@@ -285,7 +285,7 @@ Edge Case
 Confirm that the Approvals page shows submissions waiting for review.
 
 **Preconditions**
-- User has IT_DAILY_APPROVE READ permission.
+- User has the Approvals permission.
 - Pending submissions exist.
 
 **Steps**
@@ -312,7 +312,7 @@ Happy Path
 Confirm that an approver can approve a submitted checklist.
 
 **Preconditions**
-- User has IT_DAILY_APPROVE permission.
+- User has the Approvals permission.
 - A pending submission exists.
 
 **Steps**
@@ -340,7 +340,7 @@ Happy Path
 Confirm that an approver can reject a submission and must provide a reason.
 
 **Preconditions**
-- User has IT_DAILY_APPROVE permission.
+- User has the Approvals permission.
 - A pending submission exists.
 
 **Steps**
@@ -369,7 +369,7 @@ Happy Path
 Confirm that rejection requires a mandatory reason field.
 
 **Preconditions**
-- User has IT_DAILY_APPROVE permission.
+- User has the Approvals permission.
 - A pending submission exists.
 
 **Steps**
@@ -422,7 +422,7 @@ Happy Path
 Confirm that non-approvers cannot access the approvals workflow.
 
 **Preconditions**
-- User does not have IT_DAILY_APPROVE permission.
+- User does not have the Approvals permission.
 
 **Steps**
 1. Sign in as a user without approval permission.
@@ -434,7 +434,9 @@ Confirm that non-approvers cannot access the approvals workflow.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -499,7 +501,7 @@ Edge Case
 Confirm that the History page shows previously submitted reports.
 
 **Preconditions**
-- User has IT_DAILY_REPORT READ permission.
+- User has the History report permission.
 - Past submissions exist.
 
 **Steps**
@@ -626,7 +628,7 @@ Happy Path
 Confirm that admin can define a new operational task.
 
 **Preconditions**
-- User has IT_CONFIG CREATE permission.
+- User has the Config creation permission.
 - User is on the Config page.
 
 **Steps**
@@ -653,7 +655,7 @@ Happy Path
 Confirm that admin can add parts to an existing task.
 
 **Preconditions**
-- User has IT_CONFIG CREATE permission.
+- User has the Config creation permission.
 - At least one task exists.
 
 **Steps**
@@ -681,7 +683,7 @@ Happy Path
 Confirm that admin can add checklist items to a part.
 
 **Preconditions**
-- User has IT_CONFIG CREATE permission.
+- User has the Config creation permission.
 - At least one part exists.
 
 **Steps**
@@ -710,7 +712,7 @@ Happy Path
 Confirm that existing config items can be modified.
 
 **Preconditions**
-- User has IT_CONFIG UPDATE permission.
+- User has the Config editing permission.
 - Tasks, parts, and items exist.
 
 **Steps**
@@ -736,7 +738,7 @@ Happy Path
 Confirm that config items can be removed with confirmation.
 
 **Preconditions**
-- User has IT_CONFIG DELETE permission.
+- User has the Config deletion permission.
 - Config items exist.
 
 **Steps**
@@ -775,7 +777,7 @@ Confirm that non-admin users cannot modify the config.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -843,7 +845,7 @@ Happy Path
 Confirm that users without IT_CHECK_DAILY permission are blocked.
 
 **Preconditions**
-- User does not have IT_CHECK_DAILY READ permission.
+- User does not have the Today operation permission.
 
 **Steps**
 1. Sign in as a user without TODAY permission.
@@ -855,7 +857,7 @@ Confirm that users without IT_CHECK_DAILY permission are blocked.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -892,7 +894,7 @@ Permission
 Confirm that the History page respects report permission.
 
 **Preconditions**
-- User does not have IT_DAILY_REPORT READ permission.
+- User does not have the History report permission.
 
 **Steps**
 1. Sign in as a user without history permission.

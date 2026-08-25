@@ -19,7 +19,8 @@ Manual QA scenario source for the six CSSI applications. These catalogs serve as
 3. **Execute in priority order**: Start with Critical and High priority scenarios first.
 4. **Record results**: Log Pass/Fail/Blocked for each scenario with notes for failures.
 5. **Reference the source**: If a scenario reveals a bug, reference the scenario ID in the bug report.
-6. **Update status**: Once a catalog is reviewed and verified against the live system, update its status from DRAFT to REVIEWED.
+6. **Check implementation status**: Each catalog includes an Implementation Status section indicating whether features are READY, LIMITED, MOCK, or STUB.
+7. **Update status**: Once a catalog is reviewed and verified against the live system, update its status from DRAFT to REVIEWED.
 
 ## Scenario-Writing Standard
 
@@ -48,13 +49,28 @@ Each scenario contains:
 
 | Application | Status | Modules | Features | Scenarios |
 | ----------- | :----: | ------: | -------: | --------: |
-| Portal | DRAFT | 9 | 40+ | 62 |
-| CRM | DRAFT | 9 | 50+ | 60 |
+| Portal | DRAFT | 9 | 40+ | 60 |
+| CRM | DRAFT | 9 | 50+ | 57 |
 | Flowra | DRAFT | 12 | 60+ | 73 |
 | Daily Operation | DRAFT | 5 | 30+ | 36 |
 | ITQM | DRAFT | 8 | 45+ | 54 |
-| Intranet | DRAFT | 6 | 35+ | 38 |
-| **Total** | | **49** | **260+** | **323** |
+| Intranet | DRAFT | 6 | 35+ | 50 |
+| **Total** | | **49** | **260+** | **330** |
+
+### Status Definitions
+
+- **DRAFT**: Generated/initial catalog, still requires QA review against live system.
+- **REVIEWED**: Validated against actual product behavior, ready for QA execution.
+- **READY FOR IMPORT**: Taxonomy and scenario quality approved for QA Hub master data.
+
+## Implementation Status Legend
+
+Each catalog includes an Implementation Status section with the following meanings:
+
+- **READY**: Feature is fully implemented and ready for testing.
+- **LIMITED**: Feature works but has known constraints (e.g., local-only storage, disabled in production).
+- **MOCK**: Feature uses mock data when backend is unavailable.
+- **STUB**: Feature is a placeholder with no functional implementation.
 
 ## Terminology
 
@@ -65,14 +81,14 @@ Each scenario contains:
 | **SSO** | Single Sign-On — Portal authenticates users once; sibling apps trust the Portal session |
 | **RBAC** | Role-Based Access Control — permissions are assigned to roles, roles to users |
 | **Module** | A logical grouping of pages/features within an application (e.g., "Accounts", "Contacts") |
-| **Action** | A permission type within a module (READ, CREATE, UPDATE, DELETE, APPROVE, REJECT, EXPORT, IMPORT, PRINT) |
+| **Action** | A permission type within a module (READ, CREATE, UPDATE, DELETE, APPROVE, REJECT) |
 | **Draft** | Unsaved local form data; may be lost on page refresh depending on the application |
-| **Autosave** | Automatic periodic saving of form data to localStorage or Zustand store |
+| **Autosave** | Automatic periodic saving of form data |
 | **Happy Path** | The normal, expected flow where everything works correctly |
 | **Negative** | Testing error conditions, invalid input, or failure scenarios |
 | **Edge Case** | Unusual but possible scenarios that may reveal hidden bugs |
 | **Integration** | Testing behavior that spans multiple applications or systems |
-| **Permission** | Testing access control — who can see what and who can do what |
+| **Permission** | Testing access control ��� who can see what and who can do what |
 
 ---
 

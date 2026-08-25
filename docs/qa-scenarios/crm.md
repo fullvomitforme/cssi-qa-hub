@@ -360,7 +360,9 @@ Confirm that users without DELETE permission cannot delete accounts.
 - User cannot perform the delete action.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -598,7 +600,7 @@ Confirm that users without DELETE permission cannot delete contacts.
 - User cannot perform the delete action.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -809,7 +811,7 @@ Confirm that users without DELETE permission cannot delete leads.
 - User cannot perform the delete action.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -969,7 +971,7 @@ Confirm that users without DELETE permission cannot delete prospects.
 - User cannot perform the delete action.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission

@@ -476,7 +476,9 @@ Confirm that non-admin users cannot reach the user management feature.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -741,7 +743,7 @@ Confirm that non-admin users cannot reach the role management feature.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -777,14 +779,14 @@ Validation
 #### QA-PORTAL-ROLE-008 — Role permissions affect application navigation visibility
 
 **Purpose**
-Confirm that a role's READ permission controls whether a module appears in the sidebar.
+Confirm that missing permission for a module hides that module from navigation.
 
 **Preconditions**
 - User has admin permissions.
-- At least one module exists with READ permission.
+- At least one module with navigation visibility exists.
 
 **Steps**
-1. As admin, create a role without READ permission for a specific module.
+1. As admin, create a role without access to a specific module.
 2. Assign a test user to that role.
 3. Sign in as the test user.
 4. Check the sidebar navigation.
@@ -794,7 +796,7 @@ Confirm that a role's READ permission controls whether a module appears in the s
 - The test user cannot access the module's pages.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -873,7 +875,7 @@ Confirm that direct URL access to an unauthorized app is blocked.
 - CRM content is not accessible.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -1369,7 +1371,7 @@ Confirm that non-admin users cannot reach the admin dashboard.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -1557,7 +1559,7 @@ Confirm that non-admin users cannot manage announcements.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -1612,7 +1614,7 @@ Confirm that an expired session across any application sends the user back to Po
 - User must re-authenticate to access any application.
 
 **Priority**
-Critical
+High
 
 **Category**
 Integration

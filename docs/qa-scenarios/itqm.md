@@ -293,7 +293,7 @@ Happy Path
 Confirm that the Approve page shows requests awaiting division approval.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT APPROVE permission.
+- User has the Division Approval permission.
 - Requests in "Pending Division Approval" status exist.
 
 **Steps**
@@ -319,7 +319,7 @@ Happy Path
 Confirm that approval transitions the request to the next stage.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT APPROVE permission.
+- User has the Division Approval permission.
 - A request is in "Pending Division Approval" status.
 
 **Steps**
@@ -347,7 +347,7 @@ Happy Path
 Confirm that rejection transitions the request to revision and sends a note to the requester.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT REJECT permission.
+- User has the Division Rejection permission.
 - A request is in "Pending Division Approval" status.
 
 **Steps**
@@ -376,7 +376,7 @@ Happy Path
 Confirm that rejection requires a mandatory note field.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT REJECT permission.
+- User has the Division Rejection permission.
 - A request is in "Pending Division Approval" status.
 
 **Steps**
@@ -403,7 +403,7 @@ Validation
 Confirm that approval is only available for requests in "Pending Division Approval" status.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT APPROVE permission.
+- User has the Division Approval permission.
 
 **Steps**
 1. Navigate to **Development > Approve**.
@@ -428,7 +428,7 @@ Permission
 Confirm that approvers can review request details before making a decision.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT APPROVE permission.
+- User has the Division Approval permission.
 - A pending request exists.
 
 **Steps**
@@ -455,7 +455,7 @@ Happy Path
 Confirm that non-approvers cannot access the division approval workflow.
 
 **Preconditions**
-- User does not have ITQM_DEVELOPMENT APPROVE permission.
+- User does not have the Division Approval permission.
 
 **Steps**
 1. Sign in as a user without approval permission.
@@ -467,7 +467,9 @@ Confirm that non-approvers cannot access the division approval workflow.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -482,7 +484,7 @@ Permission
 Confirm that the Accept page shows requests awaiting IT acceptance.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT permission.
+- User has the IT Acceptance permission.
 - Requests in "Pending IT Accept" status exist.
 
 **Steps**
@@ -508,7 +510,7 @@ Happy Path
 Confirm that acceptance creates assignments and starts the development phase.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT permission.
+- User has the IT Acceptance permission.
 - A request is in "Pending IT Accept" status.
 
 **Steps**
@@ -539,7 +541,7 @@ Happy Path
 Confirm that acceptance requires PIC assignment.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT permission.
+- User has the IT Acceptance permission.
 - A request is in "Pending IT Accept" status.
 
 **Steps**
@@ -566,7 +568,7 @@ Validation
 Confirm that IT acceptance rejection sends the request back to revision.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT REJECT permission.
+- User has the Division Rejection permission.
 - A request is in "Pending IT Accept" status.
 
 **Steps**
@@ -595,7 +597,7 @@ Happy Path
 Confirm that due date is mandatory for acceptance.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT permission.
+- User has the IT Acceptance permission.
 - A request is in "Pending IT Accept" status.
 
 **Steps**
@@ -648,7 +650,7 @@ Integration
 Confirm that non-acceptors cannot access the IT acceptance workflow.
 
 **Preconditions**
-- User does not have ITQM_DEVELOPMENT permission.
+- User does not have the IT Acceptance permission.
 
 **Steps**
 1. Sign in as a user without acceptance permission.
@@ -660,7 +662,9 @@ Confirm that non-acceptors cannot access the IT acceptance workflow.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -675,7 +679,7 @@ Permission
 Confirm that the Done Report shows tasks assigned to the current user.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT_DONE_REPORT permission.
+- User has the Done Report permission.
 - User has active assignments.
 
 **Steps**
@@ -888,7 +892,7 @@ Permission
 Confirm that users can create issues in the tracker.
 
 **Preconditions**
-- User has ITQM_ISSUE CREATE permission.
+- User has the Issue creation permission.
 - User is signed in with ITQM access.
 
 **Steps**
@@ -916,7 +920,7 @@ Happy Path
 Confirm that validation blocks incomplete issue creation.
 
 **Preconditions**
-- User has ITQM_ISSUE CREATE permission.
+- User has the Issue creation permission.
 
 **Steps**
 1. Navigate to **Development > Issue List**.
@@ -942,7 +946,7 @@ Validation
 Confirm that issues can be modified after creation.
 
 **Preconditions**
-- User has ITQM_ISSUE UPDATE permission.
+- User has the Issue editing permission.
 - An issue exists in the system.
 
 **Steps**
@@ -1020,7 +1024,7 @@ Happy Path
 Confirm that the Kanban board displays issues in columns by status.
 
 **Preconditions**
-- User has ITQM_ISSUE READ permission.
+- User has the Issue read permission.
 - Issues exist in various statuses.
 
 **Steps**
@@ -1046,7 +1050,7 @@ Happy Path
 Confirm that drag-and-drop status transitions work correctly.
 
 **Preconditions**
-- User has ITQM_ISSUE UPDATE permission.
+- User has the Issue editing permission.
 - Issues exist on the Kanban board.
 
 **Steps**
@@ -1099,7 +1103,7 @@ Validation
 Confirm that issues can be associated with development requests.
 
 **Preconditions**
-- User has ITQM_ISSUE CREATE permission.
+- User has the Issue creation permission.
 - A development request exists.
 
 **Steps**
@@ -1128,7 +1132,7 @@ Happy Path
 Confirm that admin can add new request types for the dropdown.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT_CONFIG permission.
+- User has the Config management permission.
 - User is on the Config page.
 
 **Steps**
@@ -1155,7 +1159,7 @@ Happy Path
 Confirm that admin can add new system types for the dropdown.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT_CONFIG permission.
+- User has the Config management permission.
 - User is on the Config page.
 
 **Steps**
@@ -1182,7 +1186,7 @@ Happy Path
 Confirm that config items can be deactivated.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT_CONFIG permission.
+- User has the Config management permission.
 - Config items exist.
 
 **Steps**
@@ -1209,7 +1213,7 @@ Happy Path
 Confirm that config items can be updated.
 
 **Preconditions**
-- User has ITQM_DEVELOPMENT_CONFIG permission.
+- User has the Config management permission.
 - Config items exist.
 
 **Steps**
@@ -1237,7 +1241,7 @@ Happy Path
 Confirm that the Development Report shows a read-only view of all requests.
 
 **Preconditions**
-- User has ITQM_DEVELOP_LIST READ permission.
+- User has the Development Report read permission.
 - Requests exist in the system.
 
 **Steps**
@@ -1340,7 +1344,7 @@ Happy Path
 Confirm that the Development menu is hidden without proper permissions.
 
 **Preconditions**
-- User does not have ITQM_DEVELOPMENT_PROCESS_REQUEST or ITQM_DEVELOPMENT permission.
+- User does not have ITQM_DEVELOPMENT_PROCESS_REQUEST or the IT Acceptance permission.
 
 **Steps**
 1. Sign in as a user without development permission.
@@ -1351,7 +1355,9 @@ Confirm that the Development menu is hidden without proper permissions.
 - User cannot access any development-related pages.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -1376,7 +1382,9 @@ Confirm that issue permissions gate both list and board views.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -1389,7 +1397,7 @@ Permission
 Confirm that config management is restricted to authorized users.
 
 **Preconditions**
-- User does not have ITQM_DEVELOPMENT_CONFIG permission.
+- User does not have the Config management permission.
 
 **Steps**
 1. Sign in as a normal user.
@@ -1401,7 +1409,9 @@ Confirm that config management is restricted to authorized users.
 - Direct URL access is denied or redirected.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission

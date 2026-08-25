@@ -130,7 +130,7 @@ Happy Path
 Confirm that users without OA READ permission are blocked.
 
 **Preconditions**
-- User does not have FLOWRA_OA_PROCESS READ permission.
+- User does not have the Opening Account read permission.
 
 **Steps**
 1. Sign in as a user without OA permission.
@@ -142,7 +142,9 @@ Confirm that users without OA READ permission are blocked.
 - Direct URL access redirects to the dashboard.
 
 **Priority**
-Critical
+High
+**Category**
+Permission
 
 **Category**
 Permission
@@ -1621,7 +1623,7 @@ Confirm that submission respects UPDATE permission.
 - User cannot modify or resubmit the OA.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
@@ -1795,7 +1797,7 @@ Happy Path
 Confirm that users without OA permission are blocked.
 
 **Preconditions**
-- User does not have FLOWRA_OA_PROCESS permission.
+- User does not have the Opening Account permission.
 
 **Steps**
 1. Sign in as a user without OA permission.
@@ -1807,7 +1809,7 @@ Confirm that users without OA permission are blocked.
 - Direct URL access redirects to the dashboard.
 
 **Priority**
-Critical
+High
 
 **Category**
 Permission
