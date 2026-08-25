@@ -18,11 +18,14 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import type { UserRole } from "@/types/qa"
+
 export type NavigationItem = {
   title: string
   href: string
   icon: LucideIcon
   badge?: string
+  roles?: readonly UserRole[]
 }
 
 type NavigationGroup = {
@@ -76,14 +79,26 @@ export const navigation: readonly NavigationGroup[] = [
         title: "Applications",
         href: "/management/applications",
         icon: AppWindowIcon,
+        roles: ["ADMIN", "QA_LEAD"],
       },
-      { title: "Releases", href: "/management/releases", icon: RocketIcon },
+      {
+        title: "Releases",
+        href: "/management/releases",
+        icon: RocketIcon,
+        roles: ["ADMIN", "QA_LEAD"],
+      },
       {
         title: "Environments",
         href: "/management/environments",
         icon: MonitorCogIcon,
+        roles: ["ADMIN", "QA_LEAD"],
       },
-      { title: "QA Members", href: "/management/members", icon: UsersIcon },
+      {
+        title: "QA Members",
+        href: "/management/members",
+        icon: UsersIcon,
+        roles: ["ADMIN"],
+      },
     ],
   },
   {
@@ -106,3 +121,16 @@ export const commandItems: readonly NavigationItem[] = [
   },
   { title: "Unread QA notifications", href: "/overview", icon: BellRingIcon },
 ]
+
+export function getNavigationForRole(
+  role: UserRole
+): readonly NavigationGroup[] {
+  return navigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.roles || item.roles.includes(role)
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+}

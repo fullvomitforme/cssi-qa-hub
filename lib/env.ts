@@ -31,3 +31,7 @@ export const env = {
 export function isSupabaseConfigured() {
   return Boolean(env.supabaseUrl && env.supabasePublishableKey)
 }
+
+export function shouldUseDemoData() {
+  return env.demoMode
+}

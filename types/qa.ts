@@ -22,7 +22,40 @@ export interface CurrentProfile {
   fullName: string
   email: string
   role: UserRole
+  isActive: boolean
   avatarUrl: string | null
+}
+
+export interface ManagementApplicationItem {
+  name: string
+  slug: string
+  owner: string
+  modules: number
+  features: number
+  scenarios: number
+  coverage: number
+  status: "ACTIVE" | "INACTIVE"
+}
+
+export interface ManagementReleaseItem {
+  application: string
+  version: string
+  build: string
+  branch: string
+  commit: string
+  date: string
+  environment: string
+  status:
+    "PLANNED" | "TESTING" | "QA_APPROVED" | "REJECTED" | "RELEASED" | "ARCHIVED"
+}
+
+export interface ManagementEnvironmentItem {
+  name: string
+  key: string
+  url: string
+  applications: number
+  status: "AVAILABLE" | "MAINTENANCE" | "RESTRICTED"
+  lastChecked: string
 }
 
 export interface ScenarioSummary {

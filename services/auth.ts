@@ -3,8 +3,9 @@ import "server-only"
 import { cache } from "react"
 import { redirect } from "next/navigation"
 
+import { getProtectedRouteRedirect } from "@/lib/auth-access"
 import { demoProfile } from "@/lib/data/seed"
-import { env, isSupabaseConfigured } from "@/lib/env"
+import { shouldUseDemoData } from "@/lib/env"
 import { createClient } from "@/lib/supabase/server"
 import type { CurrentProfile, UserRole } from "@/types/qa"
 
@@ -13,42 +14,72 @@ interface ProfileRow {
   full_name: string
   email: string
   role: UserRole
+  status: "ACTIVE" | "INACTIVE"
   avatar_url: string | null
 }
 
-export const getCurrentProfile = cache(
-  async (): Promise<CurrentProfile | null> => {
-    if (env.demoMode && !isSupabaseConfigured()) return demoProfile
+export type AuthAccessState =
+  | { kind: "active"; profile: CurrentProfile }
+  | { kind: "unauthenticated" }
+  | { kind: "unprovisioned"; email: string }
 
-    const supabase = await createClient()
-    const { data: claimsData, error: claimsError } =
-      await supabase.auth.getClaims()
-    const userId = claimsData?.claims?.sub
+export const getAuthAccessState = cache(async (): Promise<AuthAccessState> => {
+  if (shouldUseDemoData()) {
+    return { kind: "active", profile: demoProfile }
+  }
 
-    if (claimsError || !userId) return null
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, role, avatar_url")
-      .eq("id", userId)
-      .single<ProfileRow>()
+  if (userError || !user) {
+    return { kind: "unauthenticated" }
+  }
 
-    if (error || !data) return null
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role, status, avatar_url")
+    .eq("id", user.id)
+    .maybeSingle<ProfileRow>()
 
-    return {
+  if (error) {
+    throw new Error(`Unable to load profile access state: ${error.message}`)
+  }
+
+  if (!data || data.status !== "ACTIVE") {
+    return { kind: "unprovisioned", email: user.email ?? "" }
+  }
+
+  return {
+    kind: "active",
+    profile: {
       id: data.id,
       fullName: data.full_name,
       email: data.email,
       role: data.role,
+      isActive: true,
       avatarUrl: data.avatar_url,
-    }
+    },
+  }
+})
+
+export const getCurrentProfile = cache(
+  async (): Promise<CurrentProfile | null> => {
+    const access = await getAuthAccessState()
+    return access.kind === "active" ? access.profile : null
   }
 )
 
 export async function requireUser() {
-  const profile = await getCurrentProfile()
-  if (!profile) redirect("/login")
-  return profile
+  const access = await getAuthAccessState()
+  if (access.kind !== "active") {
+    const destination = getProtectedRouteRedirect(access.kind) ?? "/login"
+    redirect(destination)
+  }
+
+  return access.profile
 }
 
 export async function signInWithPassword(email: string, password: string) {
@@ -58,5 +89,5 @@ export async function signInWithPassword(email: string, password: string) {
 
 export async function signOut() {
   const supabase = await createClient()
-  return supabase.auth.signOut()
+  return supabase.auth.signOut({ scope: "global" })
 }

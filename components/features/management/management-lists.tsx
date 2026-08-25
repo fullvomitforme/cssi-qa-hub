@@ -23,27 +23,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  applications,
-  environments,
-  members,
-  releases,
-} from "@/lib/data/product-seed"
+import { members } from "@/lib/data/product-seed"
+import type {
+  ManagementApplicationItem,
+  ManagementEnvironmentItem,
+  ManagementReleaseItem,
+} from "@/types/qa"
 
-type ApplicationItem = {
-  name: string
-  slug: string
-  owner: string
-  modules: number
-  features: number
-  scenarios: number
-  coverage: number
-  status: "ACTIVE" | "INACTIVE"
-}
-
-export function ApplicationsList() {
-  const [items, setItems] = useState<ApplicationItem[]>(() =>
-    applications.map((item) => ({ ...item }))
+export function ApplicationsList({
+  initialItems,
+  canManage,
+}: {
+  initialItems: ManagementApplicationItem[]
+  canManage: boolean
+}) {
+  const [items, setItems] = useState<ManagementApplicationItem[]>(() =>
+    initialItems.map((item) => ({ ...item }))
   )
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
@@ -65,6 +60,7 @@ export function ApplicationsList() {
         onFilter={setFilter}
         filterOptions={["ACTIVE", "INACTIVE"]}
         action="Add application"
+        canManage={canManage}
         onAdd={() => setCreateOpen(true)}
       />
       <Table>
@@ -81,6 +77,12 @@ export function ApplicationsList() {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {filtered.length === 0 ? (
+            <EmptyTableRow
+              colSpan={canManage ? 8 : 7}
+              message="No applications available."
+            />
+          ) : null}
           {filtered.map((application) => (
             <TableRow key={application.slug}>
               <TableCell>
@@ -117,68 +119,71 @@ export function ApplicationsList() {
                   {application.status}
                 </Badge>
               </TableCell>
-              <Actions
-                label={`Toggle ${application.name} status`}
-                onClick={() =>
-                  setItems((current) =>
-                    current.map((item) =>
-                      item.slug === application.slug
-                        ? {
-                            ...item,
-                            status:
-                              item.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                          }
-                        : item
+              {canManage ? (
+                <Actions
+                  label={`Toggle ${application.name} status`}
+                  onClick={() =>
+                    setItems((current) =>
+                      current.map((item) =>
+                        item.slug === application.slug
+                          ? {
+                              ...item,
+                              status:
+                                item.status === "ACTIVE"
+                                  ? "INACTIVE"
+                                  : "ACTIVE",
+                            }
+                          : item
+                      )
                     )
-                  )
-                }
-              />
+                  }
+                />
+              ) : (
+                <TableCell />
+              )}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <CreateItemSheet
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Add application"
-        description="Add a local application record for this session."
-        primaryLabel="Application name"
-        secondaryLabel="Owner"
-        onCreate={(name, owner) => {
-          setItems((current) => [
-            ...current,
-            {
-              name,
-              slug: `${name.toLocaleLowerCase().replaceAll(" ", "-")}-${Date.now()}`,
-              owner,
-              modules: 0,
-              features: 0,
-              scenarios: 0,
-              coverage: 0,
-              status: "ACTIVE",
-            },
-          ])
-          setCreateOpen(false)
-        }}
-      />
+      {canManage ? (
+        <CreateItemSheet
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          title="Add application"
+          description="Add a local application record for this session."
+          primaryLabel="Application name"
+          secondaryLabel="Owner"
+          onCreate={(name, owner) => {
+            setItems((current) => [
+              ...current,
+              {
+                name,
+                slug: `${name.toLocaleLowerCase().replaceAll(" ", "-")}-${Date.now()}`,
+                owner,
+                modules: 0,
+                features: 0,
+                scenarios: 0,
+                coverage: 0,
+                status: "ACTIVE",
+              },
+            ])
+            setCreateOpen(false)
+          }}
+        />
+      ) : null}
     </>
   )
 }
 
-type ReleaseItem = {
-  application: string
-  version: string
-  build: string
-  branch: string
-  commit: string
-  date: string
-  environment: string
-  status: "PLANNED" | "TESTING" | "QA_APPROVED" | "REJECTED"
-}
-
-export function ReleasesList() {
-  const [items, setItems] = useState<ReleaseItem[]>(() =>
-    releases.map((item) => ({ ...item }))
+export function ReleasesList({
+  initialItems,
+  canManage,
+}: {
+  initialItems: ManagementReleaseItem[]
+  canManage: boolean
+}) {
+  const [items, setItems] = useState<ManagementReleaseItem[]>(() =>
+    initialItems.map((item) => ({ ...item }))
   )
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
@@ -198,8 +203,16 @@ export function ReleasesList() {
         onSearch={setSearch}
         filter={filter}
         onFilter={setFilter}
-        filterOptions={["PLANNED", "TESTING", "QA_APPROVED", "REJECTED"]}
+        filterOptions={[
+          "PLANNED",
+          "TESTING",
+          "QA_APPROVED",
+          "REJECTED",
+          "RELEASED",
+          "ARCHIVED",
+        ]}
         action="Create release"
+        canManage={canManage}
         onAdd={() => setCreateOpen(true)}
       />
       <Table>
@@ -216,6 +229,12 @@ export function ReleasesList() {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {filtered.length === 0 ? (
+            <EmptyTableRow
+              colSpan={canManage ? 8 : 7}
+              message="No releases available."
+            />
+          ) : null}
           {filtered.map((release) => (
             <TableRow
               key={`${release.application}-${release.version}-${release.build}`}
@@ -252,68 +271,71 @@ export function ReleasesList() {
                   {release.status.replace("_", " ")}
                 </Badge>
               </TableCell>
-              <Actions
-                label={`Advance ${release.application} ${release.version}`}
-                onClick={() =>
-                  setItems((current) =>
-                    current.map((item) =>
-                      item === release
-                        ? {
-                            ...item,
-                            status:
-                              item.status === "PLANNED"
-                                ? "TESTING"
-                                : "QA_APPROVED",
-                          }
-                        : item
+              {canManage ? (
+                <Actions
+                  label={`Advance ${release.application} ${release.version}`}
+                  onClick={() =>
+                    setItems((current) =>
+                      current.map((item) =>
+                        item === release
+                          ? {
+                              ...item,
+                              status:
+                                item.status === "PLANNED"
+                                  ? "TESTING"
+                                  : "QA_APPROVED",
+                            }
+                          : item
+                      )
                     )
-                  )
-                }
-              />
+                  }
+                />
+              ) : (
+                <TableCell />
+              )}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <CreateItemSheet
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Create release"
-        description="Add a planned mock release."
-        primaryLabel="Version"
-        secondaryLabel="Application"
-        onCreate={(version, application) => {
-          setItems((current) => [
-            ...current,
-            {
-              application,
-              version,
-              build: "pending",
-              branch: `release/${version.replace(/^v/, "")}`,
-              commit: "pending",
-              date: "TBD",
-              environment: "UAT",
-              status: "PLANNED",
-            },
-          ])
-          setCreateOpen(false)
-        }}
-      />
+      {canManage ? (
+        <CreateItemSheet
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          title="Create release"
+          description="Add a planned mock release."
+          primaryLabel="Version"
+          secondaryLabel="Application"
+          onCreate={(version, application) => {
+            setItems((current) => [
+              ...current,
+              {
+                application,
+                version,
+                build: "pending",
+                branch: `release/${version.replace(/^v/, "")}`,
+                commit: "pending",
+                date: "TBD",
+                environment: "UAT",
+                status: "PLANNED",
+              },
+            ])
+            setCreateOpen(false)
+          }}
+        />
+      ) : null}
     </>
   )
 }
 
-type EnvironmentItem = {
-  name: string
-  key: string
-  url: string
-  applications: number
-  status: "AVAILABLE" | "MAINTENANCE" | "RESTRICTED"
-  lastChecked: string
-}
-
-export function EnvironmentsList() {
-  const [items, setItems] = useState<EnvironmentItem[]>(() =>
-    environments.map((item) => ({ ...item }))
+export function EnvironmentsList({
+  initialItems,
+  canManage,
+}: {
+  initialItems: ManagementEnvironmentItem[]
+  canManage: boolean
+}) {
+  const [items, setItems] = useState<ManagementEnvironmentItem[]>(() =>
+    initialItems.map((item) => ({ ...item }))
   )
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
@@ -335,9 +357,15 @@ export function EnvironmentsList() {
         onFilter={setFilter}
         filterOptions={["AVAILABLE", "MAINTENANCE", "RESTRICTED"]}
         action="Add environment"
+        canManage={canManage}
         onAdd={() => setCreateOpen(true)}
       />
       <div className="divide-y">
+        {filtered.length === 0 ? (
+          <div className="px-4 py-6 text-sm text-muted-foreground">
+            No environments available.
+          </div>
+        ) : null}
         {filtered.map((environment) => (
           <div
             key={environment.key}
@@ -367,54 +395,58 @@ export function EnvironmentsList() {
             <span className="text-xs text-muted-foreground">
               Checked {environment.lastChecked}
             </span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() =>
-                setItems((current) =>
-                  current.map((item) =>
-                    item.key === environment.key
-                      ? {
-                          ...item,
-                          status:
-                            item.status === "AVAILABLE"
-                              ? "MAINTENANCE"
-                              : "AVAILABLE",
-                          lastChecked: "Just now",
-                        }
-                      : item
+            {canManage ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() =>
+                  setItems((current) =>
+                    current.map((item) =>
+                      item.key === environment.key
+                        ? {
+                            ...item,
+                            status:
+                              item.status === "AVAILABLE"
+                                ? "MAINTENANCE"
+                                : "AVAILABLE",
+                            lastChecked: "Just now",
+                          }
+                        : item
+                    )
                   )
-                )
-              }
-              aria-label={`Toggle ${environment.name} availability`}
-            >
-              <MoreHorizontalIcon />
-            </Button>
+                }
+                aria-label={`Toggle ${environment.name} availability`}
+              >
+                <MoreHorizontalIcon />
+              </Button>
+            ) : null}
           </div>
         ))}
       </div>
-      <CreateItemSheet
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Add environment"
-        description="Add a local environment target."
-        primaryLabel="Environment name"
-        secondaryLabel="Base URL"
-        onCreate={(name, url) => {
-          setItems((current) => [
-            ...current,
-            {
-              name,
-              key: `${name.toLocaleUpperCase().replaceAll(" ", "_")}_${Date.now()}`,
-              url,
-              applications: 0,
-              status: "AVAILABLE",
-              lastChecked: "Just now",
-            },
-          ])
-          setCreateOpen(false)
-        }}
-      />
+      {canManage ? (
+        <CreateItemSheet
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          title="Add environment"
+          description="Add a local environment target."
+          primaryLabel="Environment name"
+          secondaryLabel="Base URL"
+          onCreate={(name, url) => {
+            setItems((current) => [
+              ...current,
+              {
+                name,
+                key: `${name.toLocaleUpperCase().replaceAll(" ", "_")}_${Date.now()}`,
+                url,
+                applications: 0,
+                status: "AVAILABLE",
+                lastChecked: "Just now",
+              },
+            ])
+            setCreateOpen(false)
+          }}
+        />
+      ) : null}
     </>
   )
 }
@@ -457,6 +489,7 @@ export function MembersList({
         onFilter={setFilter}
         filterOptions={["ADMIN", "QA_LEAD", "QA_TESTER"]}
         action="Invite QA member"
+        canManage
         onAdd={() => setCreateOpen(true)}
       />
       <Table>
@@ -562,6 +595,7 @@ function ManagementToolbar({
   onFilter,
   filterOptions,
   action,
+  canManage,
   onAdd,
 }: {
   search: string
@@ -570,6 +604,7 @@ function ManagementToolbar({
   onFilter: (value: string) => void
   filterOptions: string[]
   action: string
+  canManage: boolean
   onAdd: () => void
 }) {
   return (
@@ -594,11 +629,32 @@ function ManagementToolbar({
           <option key={option}>{option.replaceAll("_", " ")}</option>
         ))}
       </select>
-      <Button className="ml-auto" size="sm" onClick={onAdd}>
-        <PlusIcon data-icon="inline-start" />
-        {action}
-      </Button>
+      {canManage ? (
+        <Button className="ml-auto" size="sm" onClick={onAdd}>
+          <PlusIcon data-icon="inline-start" />
+          {action}
+        </Button>
+      ) : null}
     </div>
+  )
+}
+
+function EmptyTableRow({
+  colSpan,
+  message,
+}: {
+  colSpan: number
+  message: string
+}) {
+  return (
+    <TableRow>
+      <TableCell
+        colSpan={colSpan}
+        className="py-6 text-center text-sm text-muted-foreground"
+      >
+        {message}
+      </TableCell>
+    </TableRow>
   )
 }
 

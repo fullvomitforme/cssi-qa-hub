@@ -1,7 +1,14 @@
 import type { Metadata } from "next"
 import { EnvironmentsList } from "@/components/features/management/management-lists"
+import { requireUser } from "@/services/auth"
+import { listEnvironments } from "@/services/reference-data"
 export const metadata: Metadata = { title: "Environments" }
-export default function EnvironmentsPage() {
+export default async function EnvironmentsPage() {
+  const [profile, items] = await Promise.all([
+    requireUser(),
+    listEnvironments(),
+  ])
+
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -11,7 +18,10 @@ export default function EnvironmentsPage() {
           pipeline.
         </p>
       </div>
-      <EnvironmentsList />
+      <EnvironmentsList
+        initialItems={items}
+        canManage={profile.role === "ADMIN"}
+      />
     </main>
   )
 }

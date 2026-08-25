@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { ClipboardCheckIcon, LockKeyholeIcon } from "lucide-react"
+import { redirect } from "next/navigation"
 
 import { loginAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,8 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { env } from "@/lib/env"
+import { getLoginRedirect } from "@/lib/auth-access"
+import { getAuthAccessState } from "@/services/auth"
 
 export const metadata: Metadata = { title: "Sign in" }
 
@@ -20,6 +23,10 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>
 }) {
+  const access = await getAuthAccessState()
+  const destination = getLoginRedirect(access.kind)
+  if (destination) redirect(destination)
+
   const { error } = await searchParams
 
   return (

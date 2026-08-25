@@ -1,13 +1,23 @@
 import type { Metadata } from "next"
 import { ApplicationsList } from "@/components/features/management/management-lists"
+import { requireUser } from "@/services/auth"
+import { listApplications } from "@/services/reference-data"
 export const metadata: Metadata = { title: "Applications" }
-export default function ApplicationsPage() {
+export default async function ApplicationsPage() {
+  const [profile, items] = await Promise.all([
+    requireUser(),
+    listApplications(),
+  ])
+
   return (
     <ManagementPage
       title="Applications"
       description="Manage QA scope and scenario coverage across KBVS products."
     >
-      <ApplicationsList />
+      <ApplicationsList
+        initialItems={items}
+        canManage={profile.role === "ADMIN"}
+      />
     </ManagementPage>
   )
 }

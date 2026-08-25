@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { ReleasesList } from "@/components/features/management/management-lists"
+import { requireUser } from "@/services/auth"
+import { listReleases } from "@/services/reference-data"
 export const metadata: Metadata = { title: "Releases" }
-export default function ReleasesPage() {
+export default async function ReleasesPage() {
+  const [profile, items] = await Promise.all([requireUser(), listReleases()])
+
   return (
     <main className="min-w-0">
       <div className="border-b px-4 py-4 lg:px-6">
@@ -11,7 +15,7 @@ export default function ReleasesPage() {
           application.
         </p>
       </div>
-      <ReleasesList />
+      <ReleasesList initialItems={items} canManage={profile.role === "ADMIN"} />
     </main>
   )
 }

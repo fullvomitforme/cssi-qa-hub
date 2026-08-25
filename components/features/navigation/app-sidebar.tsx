@@ -21,7 +21,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { navigation } from "@/constants/navigation"
+import { getNavigationForRole } from "@/constants/navigation"
 import type { CurrentProfile } from "@/types/qa"
 
 function initials(name: string) {
@@ -35,6 +35,7 @@ function initials(name: string) {
 
 export function AppSidebar({ profile }: { profile: CurrentProfile }) {
   const pathname = usePathname()
+  const navigation = getNavigationForRole(profile.role)
 
   return (
     <Sidebar collapsible="icon">

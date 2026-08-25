@@ -50,7 +50,7 @@ export default async function ScenarioDetailPage({
             <Badge variant="outline">
               {scenario.type.replaceAll("_", " ")}
             </Badge>
-            {scenario.tags.map((tag) => (
+            {scenario.tags.map((tag: string) => (
               <Badge key={tag} variant="neutral">
                 {tag}
               </Badge>
@@ -91,7 +91,7 @@ export default async function ScenarioDetailPage({
             </CardHeader>
             <CardContent className="px-0">
               <ol className="divide-y">
-                {scenario.steps.map((step) => (
+                {scenario.steps.map((step: (typeof scenario.steps)[number]) => (
                   <li
                     key={step.position}
                     className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 px-4 py-3"

@@ -5,6 +5,7 @@ export const demoProfile: CurrentProfile = {
   fullName: "Andi Pratama",
   email: "andi.pratama@kbvalbury.com",
   role: "QA_LEAD",
+  isActive: true,
   avatarUrl: null,
 }
 

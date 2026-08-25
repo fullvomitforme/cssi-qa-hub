@@ -1,7 +1,7 @@
 import "server-only"
 
 import { scenarioSeed } from "@/lib/data/seed"
-import { env, isSupabaseConfigured } from "@/lib/env"
+import { shouldUseDemoData } from "@/lib/env"
 import { filterScenarios } from "@/lib/scenario-filters"
 import { createClient } from "@/lib/supabase/server"
 import type {
@@ -30,7 +30,7 @@ interface ScenarioRow {
 export async function listScenarios(
   query: ScenarioQuery
 ): Promise<ScenarioPage> {
-  if (env.demoMode && !isSupabaseConfigured()) {
+  if (shouldUseDemoData()) {
     const filtered = filterScenarios(scenarioSeed, query)
     const start = (query.page - 1) * query.pageSize
     return {
@@ -87,7 +87,7 @@ export async function listScenarios(
 }
 
 export async function getScenario(id: string): Promise<ScenarioDetail | null> {
-  if (env.demoMode && !isSupabaseConfigured()) {
+  if (shouldUseDemoData()) {
     return scenarioSeed.find((scenario) => scenario.id === id) ?? null
   }
 
