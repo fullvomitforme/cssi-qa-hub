@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
 import {
   ArrowRightIcon,
@@ -30,6 +30,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { reports, testRuns } from "@/lib/data/product-seed"
+import { createReportAction } from "@/app/actions/reports"
+import type { ReportListItem, ReportRunOption } from "@/services/reports"
 
 const variants = {
   PASS: "success",
@@ -48,14 +50,23 @@ type LocalReport = {
   generatedAt: string
 }
 
-export function ReportList() {
+export function ReportList({
+  initialItems,
+  runOptions,
+  mode = "demo",
+}: {
+  initialItems?: ReportListItem[]
+  runOptions?: ReportRunOption[]
+  mode?: "demo" | "real"
+}) {
   const [items, setItems] = useState<LocalReport[]>(() =>
-    reports.map((report) => ({ ...report }))
+    (initialItems ?? reports).map((report) => ({ ...report }))
   )
   const [search, setSearch] = useState("")
   const [application, setApplication] = useState("ALL")
   const [result, setResult] = useState("ALL")
   const [createOpen, setCreateOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const applications = Array.from(
     new Set(items.map((report) => report.application))
@@ -76,6 +87,18 @@ export function ReportList() {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const reportApplication = String(form.get("application"))
+    if (mode === "real") {
+      startTransition(async () => {
+        const result = await createReportAction({
+          runId: String(form.get("run")),
+          result: String(form.get("result")) as ReportListItem["result"],
+          conclusion: String(form.get("conclusion")),
+        })
+        if (result.status === "success")
+          window.location.href = `/reports/${result.reportId}`
+      })
+      return
+    }
     const report: LocalReport = {
       id: `local-report-${Date.now()}`,
       number: `QA-${reportApplication.toLocaleUpperCase().replaceAll(" ", "-")}-LOCAL-${String(items.length + 1).padStart(3, "0")}`,
@@ -222,8 +245,9 @@ export function ReportList() {
           <SheetHeader className="border-b">
             <SheetTitle>Generate QA Report</SheetTitle>
             <SheetDescription>
-              Configure a local report entry. Formal preview data remains
-              mock-driven.
+              {mode === "real"
+                ? "Finalize an immutable report snapshot from a real test run."
+                : "Configure a local report entry. Formal preview data remains mock-driven."}
             </SheetDescription>
           </SheetHeader>
           <form className="flex flex-1 flex-col" onSubmit={generateReport}>
@@ -245,9 +269,13 @@ export function ReportList() {
                   name="run"
                   className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
                 >
-                  {testRuns.map((run) => (
-                    <option key={run.id}>{run.name}</option>
-                  ))}
+                  {(mode === "real" ? (runOptions ?? []) : testRuns).map(
+                    (run) => (
+                      <option key={run.id} value={run.id}>
+                        {run.name}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
               <label className="text-sm font-medium">
@@ -292,7 +320,9 @@ export function ReportList() {
               </p>
             </div>
             <SheetFooter className="border-t">
-              <Button type="submit">Generate local entry</Button>
+              <Button type="submit" disabled={isPending}>
+                {mode === "real" ? "Finalize report" : "Generate local entry"}
+              </Button>
               <Button
                 type="button"
                 variant="outline"

@@ -7,6 +7,8 @@ import { PrintReportButton } from "@/components/features/reports/print-report-bu
 import { ReportPreview } from "@/components/features/reports/report-preview"
 import { Button } from "@/components/ui/button"
 import { getReportDetail } from "@/lib/data/product-seed"
+import { shouldUseDemoData } from "@/lib/env"
+import { getReportDetailReal } from "@/services/reports"
 
 export async function generateMetadata({
   params,
@@ -14,7 +16,10 @@ export async function generateMetadata({
   params: Promise<{ reportId: string }>
 }): Promise<Metadata> {
   const { reportId } = await params
-  return { title: getReportDetail(reportId)?.number ?? "QA Report" }
+  const report = shouldUseDemoData()
+    ? getReportDetail(reportId)
+    : await getReportDetailReal(reportId)
+  return { title: report?.number ?? "QA Report" }
 }
 
 export default async function ReportPreviewPage({
@@ -23,7 +28,9 @@ export default async function ReportPreviewPage({
   params: Promise<{ reportId: string }>
 }) {
   const { reportId } = await params
-  const report = getReportDetail(reportId)
+  const report = shouldUseDemoData()
+    ? getReportDetail(reportId)
+    : await getReportDetailReal(reportId)
   if (!report) notFound()
 
   return (
