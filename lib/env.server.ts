@@ -10,7 +10,3 @@ function readServerSecret() {
 export const serverEnv = {
   supabaseSecretKey: readServerSecret(),
 }
-
-export function isSupabaseAdminConfigured() {
-  return Boolean(serverEnv.supabaseSecretKey)
-}
