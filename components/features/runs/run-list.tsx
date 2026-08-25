@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowRightIcon,
@@ -9,18 +9,19 @@ import {
   SearchIcon,
 } from "lucide-react"
 
+import { createRunAction, type RunActionState } from "@/app/actions/runs"
+import { RunFormSheet } from "@/components/features/runs/run-form-sheet"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -29,120 +30,203 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { testPlans, testRuns } from "@/lib/data/product-seed"
+import type { RunReferences, RunSummary } from "@/types/qa"
 
 const variants = {
-  IN_PROGRESS: "info",
   BLOCKED: "warning",
+  CANCELLED: "outline",
   COMPLETED: "success",
+  IN_PROGRESS: "info",
+  NOT_STARTED: "neutral",
 } as const
 
-type LocalRun = {
-  id: string
-  name: string
-  application: string
-  release: string
-  build: string
-  environment: string
-  tester: string
-  progress: number
-  passRate: number
-  status: keyof typeof variants
-  started: string
-}
+type LocalRun = RunSummary
 
 export function RunList({
+  canManage,
+  filters,
   initialCreateOpen = false,
+  initialRuns,
+  isDemoMode,
+  references,
 }: {
+  canManage: boolean
+  filters: { application?: string; search?: string; status?: string }
   initialCreateOpen?: boolean
+  initialRuns: RunSummary[]
+  isDemoMode: boolean
+  references: RunReferences
 }) {
-  const [runs, setRuns] = useState<LocalRun[]>(() =>
-    testRuns.map((run) => ({ ...run }))
-  )
-  const [search, setSearch] = useState("")
-  const [application, setApplication] = useState("ALL")
-  const [status, setStatus] = useState("ALL")
+  const [runs, setRuns] = useState(initialRuns)
   const [createOpen, setCreateOpen] = useState(initialCreateOpen)
+  const [search, setSearch] = useState(filters.search ?? "")
+  const [application, setApplication] = useState(filters.application ?? "all")
+  const [status, setStatus] = useState(filters.status ?? "all")
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const applications = useMemo(
-    () => Array.from(new Set(runs.map((run) => run.application))).sort(),
-    [runs]
-  )
-  const filteredRuns = runs.filter((run) => {
-    const needle = search.trim().toLocaleLowerCase()
-    return (
-      (!needle ||
-        `${run.name} ${run.application} ${run.release} ${run.build} ${run.tester}`
-          .toLocaleLowerCase()
-          .includes(needle)) &&
-      (application === "ALL" || run.application === application) &&
-      (status === "ALL" || run.status === status)
+  function applyFilters(
+    nextSearch: string,
+    nextApplication: string,
+    nextStatus: string
+  ) {
+    const params = new URLSearchParams()
+    if (nextSearch) params.set("search", nextSearch)
+    if (nextApplication !== "all") params.set("application", nextApplication)
+    if (nextStatus !== "all") params.set("status", nextStatus)
+    window.location.href = `/runs${params.size > 0 ? `?${params.toString()}` : ""}`
+  }
+
+  async function createLocalRunAction(
+    _: RunActionState,
+    formData: FormData
+  ): Promise<RunActionState> {
+    const selectedApplication = references.applications.find(
+      (item) => item.id === String(formData.get("applicationId"))
     )
-  })
+    const selectedEnvironment = references.environments.find(
+      (item) => item.id === String(formData.get("environmentId"))
+    )
+    const selectedRelease = references.releases.find(
+      (item) => item.id === String(formData.get("releaseId"))
+    )
+    const selectedPlan = references.planOptions.find(
+      (item) => item.id === String(formData.get("testPlanId"))
+    )
+    const assignmentIds = JSON.parse(
+      String(formData.get("assignmentProfileIds") ?? "[]")
+    ) as string[]
+    const assignees = references.assigneeOptions.filter((item) =>
+      assignmentIds.includes(item.id)
+    )
 
-  function createRun(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const run: LocalRun = {
+    if (
+      !selectedApplication ||
+      !selectedEnvironment ||
+      !selectedRelease ||
+      !selectedPlan
+    ) {
+      return {
+        status: "error",
+        message: "Demo run references are incomplete.",
+      }
+    }
+
+    const nextRun: LocalRun = {
       id: `local-run-${Date.now()}`,
-      name: String(form.get("name")),
-      application: String(form.get("application")),
-      release: String(form.get("release")),
-      build: String(form.get("build")),
-      environment: String(form.get("environment")),
-      tester: String(form.get("tester")),
+      name: String(formData.get("name") ?? ""),
+      application: selectedApplication.name,
+      applicationSlug: selectedApplication.slug ?? "unknown",
+      planId: selectedPlan.id,
+      planName: selectedPlan.name,
+      release: selectedRelease.version,
+      build: String(formData.get("build") ?? ""),
+      environment: selectedEnvironment.name,
+      testerLabel:
+        assignees.length === 0
+          ? "Unassigned"
+          : assignees.length === 1
+            ? assignees[0].fullName
+            : `${assignees[0].fullName}, ${assignees[1]?.fullName ?? ""}`.replace(
+                /, $/,
+                ""
+              ),
       progress: 0,
       passRate: 0,
-      status: "IN_PROGRESS",
-      started: "Just now",
+      status: String(
+        formData.get("status") ?? "IN_PROGRESS"
+      ) as LocalRun["status"],
+      startedAt: "Just now",
+      completedAt: null,
     }
-    setRuns((current) => [run, ...current])
-    setCreateOpen(false)
+
+    setRuns((current) => [nextRun, ...current])
+    setNotice("Local demo run created in this browser session.")
+
+    return {
+      status: "success",
+      message: "Local run created.",
+      runId: nextRun.id,
+    }
   }
 
   return (
     <>
+      {notice ? (
+        <p className="mx-3 mt-3 rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm text-success">
+          {notice}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <div className="relative min-w-56 flex-1 sm:max-w-80">
           <SearchIcon className="absolute top-2 left-2.5 size-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                applyFilters(search, application, status)
+              }
+            }}
             placeholder="Search test runs…"
             className="pl-8"
           />
         </div>
-        <select
+
+        <Select
           value={application}
-          onChange={(event) => setApplication(event.target.value)}
-          aria-label="Filter by application"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
+          onValueChange={(value) => setApplication(value ?? "all")}
         >
-          <option value="ALL">All applications</option>
-          {applications.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
+          <SelectTrigger size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All applications</SelectItem>
+            {references.applications.map((item) => (
+              <SelectItem key={item.id} value={item.slug ?? item.id}>
+                {item.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
           value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          aria-label="Filter by run status"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
+          onValueChange={(value) => setStatus(value ?? "all")}
         >
-          <option value="ALL">All statuses</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="BLOCKED">Blocked</option>
-          <option value="COMPLETED">Completed</option>
-        </select>
+          <SelectTrigger size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="NOT_STARTED">Not Started</SelectItem>
+            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="BLOCKED">Blocked</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
-          className="ml-auto"
           size="sm"
-          onClick={() => setCreateOpen(true)}
+          variant="outline"
+          onClick={() => applyFilters(search, application, status)}
         >
-          <PlusIcon data-icon="inline-start" />
-          Start Test Run
+          Apply filters
         </Button>
+
+        {canManage ? (
+          <Button
+            className="ml-auto"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+          >
+            <PlusIcon data-icon="inline-start" />
+            Start Test Run
+          </Button>
+        ) : null}
       </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -150,7 +234,7 @@ export function RunList({
               <TableHead>Test run</TableHead>
               <TableHead>Release / Build</TableHead>
               <TableHead>Environment</TableHead>
-              <TableHead>Tester</TableHead>
+              <TableHead>Assigned QA</TableHead>
               <TableHead>Progress</TableHead>
               <TableHead>Pass rate</TableHead>
               <TableHead>Status</TableHead>
@@ -161,8 +245,9 @@ export function RunList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRuns.map((run) => {
+            {runs.map((run) => {
               const localOnly = run.id.startsWith("local-run-")
+
               return (
                 <TableRow key={run.id}>
                   <TableCell>
@@ -190,7 +275,7 @@ export function RunList({
                   <TableCell>
                     <Badge variant="outline">{run.environment}</Badge>
                   </TableCell>
-                  <TableCell>{run.tester}</TableCell>
+                  <TableCell>{run.testerLabel}</TableCell>
                   <TableCell className="min-w-40">
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="text-muted-foreground">Executed</span>
@@ -209,7 +294,7 @@ export function RunList({
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <CalendarDaysIcon className="size-3.5 text-muted-foreground" />
-                      {run.started}
+                      {run.startedAt ?? "Not started"}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -237,118 +322,56 @@ export function RunList({
                 </TableRow>
               )
             })}
+
+            {runs.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={9}
+                  className="py-12 text-center text-sm text-muted-foreground"
+                >
+                  No test runs match the current filters.
+                </TableCell>
+              </TableRow>
+            ) : null}
           </TableBody>
         </Table>
-        {filteredRuns.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No test runs match the current filters.
-          </p>
-        ) : null}
       </div>
 
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
-          <SheetHeader className="border-b">
-            <SheetTitle>Start Test Run</SheetTitle>
-            <SheetDescription>
-              Create an in-progress run for this local frontend session.
-            </SheetDescription>
-          </SheetHeader>
-          <form className="flex flex-1 flex-col" onSubmit={createRun}>
-            <div className="grid flex-1 gap-4 p-4">
-              <label className="text-sm font-medium">
-                Run name
-                <Input
-                  name="name"
-                  className="mt-1.5"
-                  placeholder="Portal Regression — v1.10.0"
-                  required
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm font-medium">
-                  Application
-                  <select
-                    name="application"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {applications.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm font-medium">
-                  Test plan
-                  <select
-                    name="plan"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {testPlans.map((plan) => (
-                      <option key={plan.id}>{plan.name}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <label className="text-sm font-medium">
-                  Release
-                  <Input
-                    name="release"
-                    defaultValue="v1.9.0"
-                    className="mt-1.5"
-                    required
-                  />
-                </label>
-                <label className="text-sm font-medium">
-                  Environment
-                  <select
-                    name="environment"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    <option>UAT</option>
-                    <option>STAGING</option>
-                  </select>
-                </label>
-                <label className="text-sm font-medium">
-                  Build
-                  <Input
-                    name="build"
-                    className="mt-1.5 font-mono"
-                    placeholder="a829d41"
-                    required
-                  />
-                </label>
-              </div>
-              <label className="text-sm font-medium">
-                Assigned tester
-                <select
-                  name="tester"
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                >
-                  <option>Andi Pratama</option>
-                  <option>Siti Aisyah</option>
-                  <option>Budi Santoso</option>
-                  <option>Dewi Larasati</option>
-                </select>
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Local runs appear in this list but do not create persisted
-                execution records.
-              </p>
-            </div>
-            <SheetFooter className="border-t">
-              <Button type="submit">Start local run</Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                Cancel
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
+      {canManage ? (
+        <RunFormSheet
+          action={isDemoMode ? createLocalRunAction : createRunAction}
+          description={
+            isDemoMode
+              ? "Create a local draft run for demo mode."
+              : "Create a persisted test run and assign real QA members."
+          }
+          initialValues={
+            isDemoMode
+              ? {
+                  name: "",
+                  applicationId: references.applications[0]?.id ?? "",
+                  testPlanId: references.planOptions[0]?.id ?? "",
+                  releaseId: references.releases[0]?.id ?? "",
+                  environmentId: references.environments[0]?.id ?? "",
+                  build: "",
+                  status: "IN_PROGRESS",
+                  assignmentProfileIds: [],
+                }
+              : undefined
+          }
+          onOpenChange={setCreateOpen}
+          onSuccess={(runId) => {
+            setCreateOpen(false)
+            if (!isDemoMode) {
+              setNotice(`Run saved. Open /runs/${runId} to review details.`)
+            }
+          }}
+          open={createOpen}
+          references={references}
+          submitLabel={isDemoMode ? "Start local run" : "Start test run"}
+          title="Start Test Run"
+        />
+      ) : null}
     </>
   )
 }

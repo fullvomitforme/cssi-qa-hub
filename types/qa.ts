@@ -271,6 +271,109 @@ export interface PlanScenarioQuery {
   type?: TestType
 }
 
+export type RunStatus =
+  "NOT_STARTED" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | "CANCELLED"
+
+export interface RunSummary {
+  id: string
+  name: string
+  application: string
+  applicationSlug: string
+  planId: string
+  planName: string
+  release: string
+  build: string
+  environment: string
+  testerLabel: string
+  progress: number
+  passRate: number
+  status: RunStatus
+  startedAt: string | null
+  completedAt: string | null
+}
+
+export interface RunAssignment {
+  profileId: string
+  fullName: string
+  email: string
+  role: UserRole
+  assignedAt: string
+}
+
+export interface RunScenarioSnapshot {
+  id: string
+  sourceScenarioId: string
+  title: string
+  priority: Priority
+  type: TestType
+  status: ExecutionStatus
+}
+
+export interface RunExecutionSummary {
+  total: number
+  executed: number
+  passed: number
+  failed: number
+  blocked: number
+  skipped: number
+  notTested: number
+  coverage: number
+  passRate: number
+}
+
+export interface RunDetail extends RunSummary {
+  applicationId: string
+  environmentId: string
+  releaseId: string
+  testPlanId: string
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  updatedBy: string
+  assignments: RunAssignment[]
+  scenarios: RunScenarioSnapshot[]
+  executionSummary: RunExecutionSummary
+}
+
+export interface RunQuery {
+  application?: string
+  search?: string
+  status?: RunStatus
+}
+
+export interface RunPlanOption {
+  id: string
+  applicationId: string
+  applicationName: string
+  environmentId: string
+  environmentName: string
+  releaseId: string
+  releaseVersion: string
+  name: string
+  ownerName: string
+  scenarioCount: number
+  status: PlanStatus
+}
+
+export interface RunReferences {
+  applications: PlanReferenceOption[]
+  environments: PlanReferenceOption[]
+  releases: PlanReleaseOption[]
+  planOptions: RunPlanOption[]
+  assigneeOptions: PlanProfileOption[]
+}
+
+export interface RunFormValues {
+  name: string
+  applicationId: string
+  testPlanId: string
+  releaseId: string
+  environmentId: string
+  build: string
+  status: RunStatus
+  assignmentProfileIds: string[]
+}
+
 export interface OverviewMetric {
   label: string
   value: number
