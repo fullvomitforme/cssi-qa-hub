@@ -15,7 +15,7 @@ export default async function DashboardLayout({
       <AppSidebar profile={profile} />
       <SidebarInset className="min-w-0 bg-background">
         <SiteHeader />
-        {children}
+        <main id="main-content">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

@@ -36,6 +36,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -552,7 +559,7 @@ export function ExecutionWorkspace({
 
   return (
     <>
-      <div className="grid min-h-[calc(100vh-7rem)] min-w-0 lg:grid-cols-[minmax(0,1fr)_460px]">
+      <div className="grid min-h-[calc(100vh-7rem)] min-w-0 lg:grid-cols-[minmax(0,1fr)_min(420px,50%)]">
         <section className="min-w-0 border-r">
           <div className="grid grid-cols-5 divide-x border-b bg-muted/20">
             {[
@@ -613,21 +620,25 @@ export function ExecutionWorkspace({
             <label className="sr-only" htmlFor="execution-status-filter">
               Filter execution status
             </label>
-            <select
+            <Select
               id="execution-status-filter"
               value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as ExecutionStatus | "ALL")
+              onValueChange={(value) =>
+                setStatusFilter(value as ExecutionStatus | "ALL")
               }
-              className="h-8 rounded-lg border bg-background px-2 text-sm"
             >
-              <option value="ALL">All statuses</option>
-              <option value="PASS">Passed</option>
-              <option value="FAIL">Failed</option>
-              <option value="BLOCKED">Blocked</option>
-              <option value="SKIPPED">Skipped</option>
-              <option value="NOT_TESTED">Not Tested</option>
-            </select>
+              <SelectTrigger className="h-8 w-36">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                <SelectItem value="PASS">Passed</SelectItem>
+                <SelectItem value="FAIL">Failed</SelectItem>
+                <SelectItem value="BLOCKED">Blocked</SelectItem>
+                <SelectItem value="SKIPPED">Skipped</SelectItem>
+                <SelectItem value="NOT_TESTED">Not Tested</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="sm"
@@ -702,7 +713,7 @@ export function ExecutionWorkspace({
           )}
         </section>
 
-        <aside className="qa-scrollbar min-w-0 bg-background lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        <aside className="qa-scrollbar min-w-0 overflow-y-auto lg:max-h-[calc(100vh-3rem)]">
           <div className="sticky top-0 z-10 border-b bg-background p-4">
             <div className="flex items-center gap-2">
               <Badge variant="outline">{selected.module}</Badge>
@@ -770,21 +781,21 @@ export function ExecutionWorkspace({
             <Separator />
             <section className="space-y-3">
               {failureMissing.length ? (
-                <p
+                <div
                   role="alert"
-                  className="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+                  className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
                 >
                   Complete the required {failureMissing.join(", ")} before this
                   failure is ready to record.
-                </p>
+                </div>
               ) : null}
               {saveError ? (
-                <p
+                <div
                   role="alert"
-                  className="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+                  className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
                 >
                   {saveError}
-                </p>
+                </div>
               ) : null}
               {saveMessage ? (
                 <p className="border border-success-border bg-success-bg p-3 text-xs text-success-text">
@@ -827,25 +838,27 @@ export function ExecutionWorkspace({
                   <div className="grid grid-cols-2 gap-3">
                     <label className="block text-xs font-semibold text-muted-foreground uppercase">
                       Severity <span className="text-destructive">*</span>
-                      <select
+                      <Select
                         value={selected.severity ?? ""}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateSelected({
-                            severity: event.target.value
-                              ? (event.target.value as Severity)
-                              : null,
+                            severity: value ? (value as Severity) : null,
                           })
                         }
                         aria-invalid={!selected.severity}
-                        className="mt-2 h-8 w-full rounded-lg border bg-background px-2 text-sm aria-invalid:border-destructive"
                         disabled={mode === "real" && !canMutate}
                       >
-                        <option value="">Select severity</option>
-                        <option>CRITICAL</option>
-                        <option>HIGH</option>
-                        <option>MEDIUM</option>
-                        <option>LOW</option>
-                      </select>
+                        <SelectTrigger className="mt-2 h-8 w-full">
+                          <SelectValue placeholder="Select severity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Select severity</SelectItem>
+                          <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+                          <SelectItem value="HIGH">HIGH</SelectItem>
+                          <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                          <SelectItem value="LOW">LOW</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </label>
                     <label className="block text-xs font-semibold text-muted-foreground uppercase">
                       Bug reference
@@ -1042,20 +1055,24 @@ export function ExecutionWorkspace({
               )}
               {mode === "demo" || canMutate ? (
                 <div className="mt-2 grid grid-cols-[8rem_minmax(0,1fr)_auto] gap-2">
-                  <select
+                  <Select
                     value={feedbackType}
-                    onChange={(event) =>
-                      setFeedbackType(
-                        event.target.value as ExecutionFeedbackItem["type"]
-                      )
+                    onValueChange={(value) =>
+                      setFeedbackType(value as ExecutionFeedbackItem["type"])
                     }
                     aria-label="Feedback type"
-                    className="h-8 rounded-lg border bg-background px-2 text-xs"
                   >
-                    {feedbackTypes.map((type) => (
-                      <option key={type}>{type}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-8 w-32">
+                      <SelectValue placeholder="Feedback type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {feedbackTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
                     value={feedbackDrafts[selected.id] ?? ""}
                     onChange={(event) =>
@@ -1167,7 +1184,7 @@ export function ExecutionWorkspace({
       </div>
 
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="sm:max-w-lg">
           <SheetHeader className="border-b pr-12">
             <SheetTitle>Run history</SheetTitle>
             <SheetDescription>

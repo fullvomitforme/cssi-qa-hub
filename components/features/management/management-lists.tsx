@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { MoreHorizontalIcon, PlusIcon, SearchIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -50,6 +58,7 @@ export function ApplicationsList({
   canManage: boolean
   mode?: "demo" | "real"
 }) {
+  const router = useRouter()
   const [items, setItems] = useState<ManagementApplicationItem[]>(() =>
     initialItems.map((item) => ({ ...item }))
   )
@@ -140,7 +149,7 @@ export function ApplicationsList({
                       ? void toggleApplicationAction(
                           application.slug,
                           application.status !== "ACTIVE"
-                        ).then(() => window.location.reload())
+                        ).then(() => router.refresh())
                       : setItems((current) =>
                           current.map((item) =>
                             item.slug === application.slug
@@ -174,7 +183,7 @@ export function ApplicationsList({
           onCreate={(name, owner) => {
             if (mode === "real") {
               void createApplicationAction({ name, owner }).then(() =>
-                window.location.reload()
+                router.refresh()
               )
               return
             }
@@ -208,6 +217,7 @@ export function ReleasesList({
   canManage: boolean
   mode?: "demo" | "real"
 }) {
+  const router = useRouter()
   const [items, setItems] = useState<ManagementReleaseItem[]>(() =>
     initialItems.map((item) => ({ ...item }))
   )
@@ -307,7 +317,7 @@ export function ReleasesList({
                           release.status === "PLANNED"
                             ? "TESTING"
                             : "QA_APPROVED"
-                        ).then(() => window.location.reload())
+                        ).then(() => router.refresh())
                       : setItems((current) =>
                           current.map((item) =>
                             item === release
@@ -341,7 +351,7 @@ export function ReleasesList({
           onCreate={(version, application) => {
             if (mode === "real") {
               void createReleaseAction({ version, application }).then(() =>
-                window.location.reload()
+                router.refresh()
               )
               return
             }
@@ -375,6 +385,7 @@ export function EnvironmentsList({
   canManage: boolean
   mode?: "demo" | "real"
 }) {
+  const router = useRouter()
   const [items, setItems] = useState<ManagementEnvironmentItem[]>(() =>
     initialItems.map((item) => ({ ...item }))
   )
@@ -447,7 +458,7 @@ export function EnvironmentsList({
                         environment.status === "AVAILABLE"
                           ? "MAINTENANCE"
                           : "AVAILABLE"
-                      ).then(() => window.location.reload())
+                      ).then(() => router.refresh())
                     : setItems((current) =>
                         current.map((item) =>
                           item.key === environment.key
@@ -482,7 +493,7 @@ export function EnvironmentsList({
           onCreate={(name, url) => {
             if (mode === "real") {
               void createEnvironmentAction({ name, url }).then(() =>
-                window.location.reload()
+                router.refresh()
               )
               return
             }
@@ -526,6 +537,7 @@ export function MembersList({
   initialItems?: MemberItem[]
   mode?: "demo" | "real"
 }) {
+  const router = useRouter()
   const [items, setItems] = useState<MemberItem[]>(
     () =>
       initialItems ??
@@ -588,21 +600,24 @@ export function MembersList({
               </TableCell>
               <TableCell>
                 {mode === "real" ? (
-                  <select
-                    aria-label={`Change ${member.name} role`}
-                    className="h-8 rounded-lg border bg-background px-2 text-sm"
+                  <Select
                     defaultValue={member.role}
-                    onChange={(event) =>
+                    onValueChange={(value) =>
                       void updateMemberAction(member.id, {
-                        role: event.target.value as MemberItem["role"],
+                        role: value as MemberItem["role"],
                         status: member.status,
-                      }).then(() => window.location.reload())
+                      }).then(() => router.refresh())
                     }
                   >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="QA_LEAD">QA LEAD</option>
-                    <option value="QA_TESTER">QA TESTER</option>
-                  </select>
+                    <SelectTrigger className="h-8 w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADMIN">ADMIN</SelectItem>
+                      <SelectItem value="QA_LEAD">QA LEAD</SelectItem>
+                      <SelectItem value="QA_TESTER">QA TESTER</SelectItem>
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Badge variant="outline">
                     {member.role.replace("_", " ")}
@@ -635,7 +650,7 @@ export function MembersList({
                       size="sm"
                       onClick={() =>
                         void resendMemberInviteAction(member.id).then(() =>
-                          window.location.reload()
+                          router.refresh()
                         )
                       }
                     >
@@ -655,7 +670,7 @@ export function MembersList({
                               member.status === "ACTIVE"
                                 ? "INACTIVE"
                                 : "ACTIVE",
-                          }).then(() => window.location.reload())
+                          }).then(() => router.refresh())
                         : setItems((current) =>
                             current.map((item) =>
                               item.email === member.email
@@ -685,7 +700,7 @@ export function MembersList({
         mode={mode}
         onInvite={(input) => {
           if (mode === "real") {
-            void inviteMemberAction(input).then(() => window.location.reload())
+            void inviteMemberAction(input).then(() => router.refresh())
             return
           }
           setItems((current) => [
@@ -733,7 +748,7 @@ function InviteMemberSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>Invite QA member</SheetTitle>
           <SheetDescription>
@@ -743,7 +758,7 @@ function InviteMemberSheet({
           </SheetDescription>
         </SheetHeader>
         <form
-          className="flex h-full flex-col"
+          className="flex flex-col gap-4 p-4"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -754,36 +769,39 @@ function InviteMemberSheet({
             })
           }}
         >
-          <div className="grid gap-4 p-4">
-            <label className="text-sm font-medium">
-              Full name
-              <Input name="fullName" className="mt-1.5" required />
-            </label>
-            <label className="text-sm font-medium">
-              Email
-              <Input
-                name="email"
-                type="email"
-                autoComplete="email"
-                className="mt-1.5"
-                required
-              />
-            </label>
-            <label className="text-sm font-medium">
-              Role
-              <select
-                value={role}
-                onChange={(event) =>
-                  setRole(event.target.value as MemberItem["role"])
-                }
-                className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-              >
-                <option value="ADMIN">ADMIN</option>
-                <option value="QA_LEAD">QA LEAD</option>
-                <option value="QA_TESTER">QA TESTER</option>
-              </select>
-            </label>
-          </div>
+          <label className="text-sm font-medium">
+            Full name
+            <Input name="fullName" className="mt-1.5" required />
+          </label>
+          <label className="text-sm font-medium">
+            Email
+            <Input
+              name="email"
+              type="email"
+              autoComplete="email"
+              className="mt-1.5"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Role
+            <Select
+              value={role}
+              onValueChange={(value) => setRole(value as MemberItem["role"])}
+            >
+              <SelectTrigger className="mt-1.5 h-8 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ADMIN">ADMIN</SelectItem>
+                <SelectItem value="QA_LEAD">QA LEAD</SelectItem>
+                <SelectItem value="QA_TESTER">QA TESTER</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Determines the member&apos;s permissions in QA Hub.
+            </p>
+          </label>
           <SheetFooter className="border-t">
             <Button
               type="button"
@@ -830,17 +848,23 @@ function ManagementToolbar({
           className="pl-8"
         />
       </div>
-      <select
+      <Select
         value={filter}
-        onChange={(event) => onFilter(event.target.value)}
+        onValueChange={(v) => onFilter(v ?? "ALL")}
         aria-label="Filter management list"
-        className="h-8 rounded-lg border bg-background px-2 text-sm"
       >
-        <option value="ALL">All</option>
-        {filterOptions.map((option) => (
-          <option key={option}>{option.replaceAll("_", " ")}</option>
-        ))}
-      </select>
+        <SelectTrigger className="h-8 w-32">
+          <SelectValue placeholder="All" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All</SelectItem>
+          {filterOptions.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option.replaceAll("_", " ")}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {canManage ? (
         <Button className="ml-auto" size="sm" onClick={onAdd}>
           <PlusIcon data-icon="inline-start" />
@@ -905,32 +929,30 @@ function CreateItemSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="sm:max-w-md">
         <SheetHeader className="border-b">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <form
-          className="flex flex-1 flex-col"
+          className="flex flex-col gap-4 p-4"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
             onCreate(String(form.get("primary")), String(form.get("secondary")))
           }}
         >
-          <div className="grid flex-1 gap-4 p-4">
-            <label className="text-sm font-medium">
-              {primaryLabel}
-              <Input name="primary" className="mt-1.5" required />
-            </label>
-            <label className="text-sm font-medium">
-              {secondaryLabel}
-              <Input name="secondary" className="mt-1.5" required />
-            </label>
-            <p className="text-xs text-muted-foreground">
-              This change is local to the current browser session.
-            </p>
-          </div>
+          <label className="text-sm font-medium">
+            {primaryLabel}
+            <Input name="primary" className="mt-1.5" required />
+          </label>
+          <label className="text-sm font-medium">
+            {secondaryLabel}
+            <Input name="secondary" className="mt-1.5" required />
+          </label>
+          <p className="text-xs text-muted-foreground">
+            This change is local to the current browser session.
+          </p>
           <SheetFooter className="border-t">
             <Button type="submit">Save local item</Button>
             <Button

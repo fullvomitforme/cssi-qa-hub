@@ -132,7 +132,7 @@ export function ScenarioTable({ scenarios }: { scenarios: ScenarioSummary[] }) {
           if (!open) setSelected(null)
         }}
       >
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-xl">
           {selected ? (
             <>
               <SheetHeader className="border-b pr-12">

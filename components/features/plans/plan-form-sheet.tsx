@@ -17,6 +17,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type {
   PlanFormValues,
   PlanReferences,
@@ -228,12 +235,12 @@ function PlanFormSheetInner({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-3xl">
+      <SheetContent className="sm:max-w-3xl">
         <SheetHeader className="border-b">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <form action={formAction} className="flex flex-1 flex-col">
+        <form action={formAction} className="flex min-h-0 flex-1 flex-col">
           {planId ? <input type="hidden" name="planId" value={planId} /> : null}
           <input
             type="hidden"
@@ -258,14 +265,11 @@ function PlanFormSheetInner({
             value={JSON.stringify(values.assignmentProfileIds)}
           />
 
-          <div className="qa-scrollbar grid flex-1 gap-4 overflow-y-auto p-4">
+          <div className="qa-scrollbar grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">
             {state.status === "error" && state.message ? (
-              <p
-                role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-              >
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 {state.message}
-              </p>
+              </div>
             ) : null}
 
             <label className="block text-sm font-medium">
@@ -287,20 +291,24 @@ function PlanFormSheetInner({
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm font-medium">
                 Application
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.applicationId}
-                  onChange={(event) =>
-                    handleApplicationChange(event.target.value)
+                  onValueChange={(value) =>
+                    handleApplicationChange(value ?? "")
                   }
                 >
-                  <option value="">Select application</option>
-                  {references.applications.map((application) => (
-                    <option key={application.id} value={application.id}>
-                      {application.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select application" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select application</SelectItem>
+                    {references.applications.map((application) => (
+                      <SelectItem key={application.id} value={application.id}>
+                        {application.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.applicationId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.applicationId[0]}
@@ -309,20 +317,24 @@ function PlanFormSheetInner({
               </label>
               <label className="block text-sm font-medium">
                 Environment
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.environmentId}
-                  onChange={(event) =>
-                    handleEnvironmentChange(event.target.value)
+                  onValueChange={(value) =>
+                    handleEnvironmentChange(value ?? "")
                   }
                 >
-                  <option value="">Select environment</option>
-                  {references.environments.map((environment) => (
-                    <option key={environment.id} value={environment.id}>
-                      {environment.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select environment</SelectItem>
+                    {references.environments.map((environment) => (
+                      <SelectItem key={environment.id} value={environment.id}>
+                        {environment.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.environmentId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.environmentId[0]}
@@ -334,26 +346,40 @@ function PlanFormSheetInner({
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm font-medium">
                 Release
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.releaseId}
-                  onChange={(event) =>
-                    updateValue("releaseId", event.target.value)
+                  onValueChange={(value) =>
+                    updateValue("releaseId", value ?? "")
                   }
                   disabled={!values.applicationId || !values.environmentId}
                 >
-                  <option value="">
-                    {hasReleaseOptions
-                      ? "Select release"
-                      : "No releases available"}
-                  </option>
-                  {releaseOptions.map((release) => (
-                    <option key={release.id} value={release.id}>
-                      {release.version}
-                      {release.build ? ` · ${release.build}` : ""}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue
+                      placeholder={
+                        hasReleaseOptions
+                          ? "Select release"
+                          : "No releases available"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!hasReleaseOptions ? (
+                      <SelectItem value="" disabled>
+                        No releases available
+                      </SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="">Select release</SelectItem>
+                        {releaseOptions.map((release) => (
+                          <SelectItem key={release.id} value={release.id}>
+                            {release.version}
+                            {release.build ? ` · ${release.build}` : ""}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.releaseId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.releaseId[0]}
@@ -362,20 +388,22 @@ function PlanFormSheetInner({
               </label>
               <label className="block text-sm font-medium">
                 Owner
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.ownerId}
-                  onChange={(event) =>
-                    updateValue("ownerId", event.target.value)
-                  }
+                  onValueChange={(value) => updateValue("ownerId", value ?? "")}
                 >
-                  <option value="">Select owner</option>
-                  {references.ownerOptions.map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {owner.fullName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select owner</SelectItem>
+                    {references.ownerOptions.map((owner) => (
+                      <SelectItem key={owner.id} value={owner.id}>
+                        {owner.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.ownerId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.ownerId[0]}
@@ -387,25 +415,26 @@ function PlanFormSheetInner({
             <div className="grid grid-cols-3 gap-3">
               <label className="block text-sm font-medium">
                 Status
-                <select
+                <Select
                   name="status"
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
                   value={values.status}
-                  onChange={(event) =>
-                    updateValue(
-                      "status",
-                      event.target.value as PlanFormValues["status"]
-                    )
+                  onValueChange={(value) =>
+                    updateValue("status", value as PlanFormValues["status"])
                   }
                 >
-                  {["DRAFT", "READY", "ACTIVE", "COMPLETED", "ARCHIVED"].map(
-                    (status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    )
-                  )}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["DRAFT", "READY", "ACTIVE", "COMPLETED", "ARCHIVED"].map(
+                      (status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
               </label>
               <label className="block text-sm font-medium">
                 Start date
@@ -463,68 +492,84 @@ function PlanFormSheetInner({
                     className="pl-8"
                   />
                 </div>
-                <select
-                  className="h-8 rounded-lg border bg-background px-2 text-sm"
+                <Select
                   value={scenarioModule}
-                  onChange={(event) => {
-                    setScenarioModule(event.target.value)
+                  onValueChange={(value) => {
+                    setScenarioModule(value ?? "")
                     setScenarioFeature("")
                   }}
                 >
-                  <option value="">All modules</option>
-                  {moduleOptions.map((module) => (
-                    <option key={module.id} value={module.slug}>
-                      {module.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-8 rounded-lg border bg-background px-2 text-sm"
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="All modules" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All modules</SelectItem>
+                    {moduleOptions.map((module) => (
+                      <SelectItem key={module.id} value={module.slug}>
+                        {module.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={scenarioFeature}
-                  onChange={(event) => setScenarioFeature(event.target.value)}
+                  onValueChange={(value) => setScenarioFeature(value ?? "")}
                 >
-                  <option value="">All features</option>
-                  {featureOptions.map((feature) => (
-                    <option key={feature.id} value={feature.slug}>
-                      {feature.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-8 rounded-lg border bg-background px-2 text-sm"
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="All features" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All features</SelectItem>
+                    {featureOptions.map((feature) => (
+                      <SelectItem key={feature.id} value={feature.slug}>
+                        {feature.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={scenarioType}
-                  onChange={(event) => setScenarioType(event.target.value)}
+                  onValueChange={(value) => setScenarioType(value ?? "")}
                 >
-                  <option value="">All types</option>
-                  {[
-                    "HAPPY_PATH",
-                    "VALIDATION",
-                    "NEGATIVE",
-                    "PERMISSION",
-                    "EDGE_CASE",
-                    "INTEGRATION",
-                    "REGRESSION",
-                    "RESPONSIVE",
-                    "ACCESSIBILITY",
-                    "PERFORMANCE",
-                  ].map((type) => (
-                    <option key={type} value={type}>
-                      {type.replaceAll("_", " ")}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-8 rounded-lg border bg-background px-2 text-sm"
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All types</SelectItem>
+                    {[
+                      "HAPPY_PATH",
+                      "VALIDATION",
+                      "NEGATIVE",
+                      "PERMISSION",
+                      "EDGE_CASE",
+                      "INTEGRATION",
+                      "REGRESSION",
+                      "RESPONSIVE",
+                      "ACCESSIBILITY",
+                      "PERFORMANCE",
+                    ].map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.replaceAll("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={scenarioPriority}
-                  onChange={(event) => setScenarioPriority(event.target.value)}
+                  onValueChange={(value) => setScenarioPriority(value ?? "")}
                 >
-                  <option value="">All priorities</option>
-                  {["P0", "P1", "P2", "P3"].map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="All priorities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All priorities</SelectItem>
+                    {["P0", "P1", "P2", "P3"].map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        {priority}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <p className="text-xs text-muted-foreground">
                 {values.scenarioIds.length} selected

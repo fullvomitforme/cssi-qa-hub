@@ -12,9 +12,8 @@ import {
 } from "@/components/features/overview/overview-charts"
 import { RecentTestRuns } from "@/components/features/overview/recent-test-runs"
 import { TopFailuresTable } from "@/components/features/overview/top-failures-table"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { getOverviewData } from "@/services/overview"
 import { shouldUseDemoData } from "@/lib/env"
 
@@ -42,12 +41,16 @@ export default async function OverviewPage({
   const allReleases = data.recentRuns
     .map((run: { id: string; name: string }) => run.name)
     .filter((name): name is string => Boolean(name))
-  const allEnvironments = data.recentRuns
-    .map(
-      (run: { id: string; name: string; environment?: string | null }) =>
-        run.environment
-    )
-    .filter((env): env is string => Boolean(env))
+  const allEnvironments = [
+    ...new Set(
+      data.recentRuns
+        .map(
+          (run: { id: string; name: string; environment?: string | null }) =>
+            run.environment
+        )
+        .filter((env): env is string => Boolean(env))
+    ),
+  ]
 
   return (
     <main className="flex min-w-0 flex-col gap-4 p-4 lg:p-6">
@@ -93,7 +96,7 @@ export default async function OverviewPage({
           </label>
           <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
             <span className="text-muted-foreground">From</span>
-            <Input
+            <input
               type="date"
               defaultValue={query.from}
               aria-label="Start date"
@@ -103,7 +106,7 @@ export default async function OverviewPage({
           </label>
           <label className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2 text-xs">
             <span className="text-muted-foreground">To</span>
-            <Input
+            <input
               type="date"
               defaultValue={query.to}
               aria-label="End date"

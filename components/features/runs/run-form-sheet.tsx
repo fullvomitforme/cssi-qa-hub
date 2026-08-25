@@ -15,6 +15,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import type { RunFormValues, RunReferences } from "@/types/qa"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const initialRunActionState: RunActionState = { status: "idle" }
 
@@ -150,12 +157,12 @@ function RunFormSheetInner({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl">
+      <SheetContent className="sm:max-w-2xl">
         <SheetHeader className="border-b">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <form action={formAction} className="flex flex-1 flex-col">
+        <form action={formAction} className="flex min-h-0 flex-1 flex-col">
           {runId ? <input type="hidden" name="runId" value={runId} /> : null}
           <input
             type="hidden"
@@ -175,14 +182,11 @@ function RunFormSheetInner({
             value={JSON.stringify(values.assignmentProfileIds)}
           />
 
-          <div className="qa-scrollbar grid flex-1 gap-4 overflow-y-auto p-4">
+          <div className="qa-scrollbar grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">
             {state.status === "error" && state.message ? (
-              <p
-                role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-              >
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 {state.message}
-              </p>
+              </div>
             ) : null}
 
             <label className="block text-sm font-medium">
@@ -204,21 +208,25 @@ function RunFormSheetInner({
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm font-medium">
                 Application
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.applicationId}
-                  onChange={(event) =>
-                    handleApplicationChange(event.target.value)
+                  onValueChange={(value) =>
+                    handleApplicationChange(value ?? "")
                   }
                   disabled={isEditing}
                 >
-                  <option value="">Select application</option>
-                  {references.applications.map((application) => (
-                    <option key={application.id} value={application.id}>
-                      {application.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select application" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select application</SelectItem>
+                    {references.applications.map((application) => (
+                      <SelectItem key={application.id} value={application.id}>
+                        {application.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.applicationId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.applicationId[0]}
@@ -228,23 +236,37 @@ function RunFormSheetInner({
 
               <label className="block text-sm font-medium">
                 Test plan
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.testPlanId}
-                  onChange={(event) => handlePlanChange(event.target.value)}
+                  onValueChange={(value) => handlePlanChange(value ?? "")}
                   disabled={isEditing}
                 >
-                  <option value="">
-                    {filteredPlans.length > 0
-                      ? "Select test plan"
-                      : "No plans available"}
-                  </option>
-                  {filteredPlans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue
+                      placeholder={
+                        filteredPlans.length > 0
+                          ? "Select test plan"
+                          : "No plans available"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPlans.length > 0 ? (
+                      <>
+                        <SelectItem value="">Select test plan</SelectItem>
+                        {filteredPlans.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name}
+                          </SelectItem>
+                        ))}
+                      </>
+                    ) : (
+                      <SelectItem value="" disabled>
+                        No plans available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.testPlanId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.testPlanId[0]}
@@ -256,25 +278,39 @@ function RunFormSheetInner({
             <div className="grid grid-cols-3 gap-3">
               <label className="block text-sm font-medium">
                 Release
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.releaseId}
-                  onChange={(event) =>
-                    updateValue("releaseId", event.target.value)
+                  onValueChange={(value) =>
+                    updateValue("releaseId", value ?? "")
                   }
                 >
-                  <option value="">
-                    {filteredReleases.length > 0
-                      ? "Select release"
-                      : "No releases available"}
-                  </option>
-                  {filteredReleases.map((release) => (
-                    <option key={release.id} value={release.id}>
-                      {release.version}
-                      {release.build ? ` · ${release.build}` : ""}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue
+                      placeholder={
+                        filteredReleases.length > 0
+                          ? "Select release"
+                          : "No releases available"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredReleases.length > 0 ? (
+                      <>
+                        <SelectItem value="">Select release</SelectItem>
+                        {filteredReleases.map((release) => (
+                          <SelectItem key={release.id} value={release.id}>
+                            {release.version}
+                            {release.build ? ` · ${release.build}` : ""}
+                          </SelectItem>
+                        ))}
+                      </>
+                    ) : (
+                      <SelectItem value="" disabled>
+                        No releases available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.releaseId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.releaseId[0]}
@@ -284,21 +320,25 @@ function RunFormSheetInner({
 
               <label className="block text-sm font-medium">
                 Environment
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.environmentId}
-                  onChange={(event) => {
-                    updateValue("environmentId", event.target.value)
+                  onValueChange={(value) => {
+                    updateValue("environmentId", value ?? "")
                     updateValue("releaseId", "")
                   }}
                 >
-                  <option value="">Select environment</option>
-                  {references.environments.map((environment) => (
-                    <option key={environment.id} value={environment.id}>
-                      {environment.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select environment</SelectItem>
+                    {references.environments.map((environment) => (
+                      <SelectItem key={environment.id} value={environment.id}>
+                        {environment.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.environmentId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.environmentId[0]}
@@ -308,29 +348,30 @@ function RunFormSheetInner({
 
               <label className="block text-sm font-medium">
                 Status
-                <select
+                <Select
                   name="status"
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
                   value={values.status}
-                  onChange={(event) =>
-                    updateValue(
-                      "status",
-                      event.target.value as RunFormValues["status"]
-                    )
+                  onValueChange={(value) =>
+                    updateValue("status", value as RunFormValues["status"])
                   }
                 >
-                  {[
-                    "NOT_STARTED",
-                    "IN_PROGRESS",
-                    "BLOCKED",
-                    "COMPLETED",
-                    "CANCELLED",
-                  ].map((status) => (
-                    <option key={status} value={status}>
-                      {status.replaceAll("_", " ")}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "NOT_STARTED",
+                      "IN_PROGRESS",
+                      "BLOCKED",
+                      "COMPLETED",
+                      "CANCELLED",
+                    ].map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replaceAll("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </label>
             </div>
 

@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { ExecutionWorkspace } from "@/components/features/execution/execution-workspace"
@@ -10,7 +11,7 @@ vi.mock("@/app/actions/executions", () => ({
 }))
 
 describe("ExecutionWorkspace", () => {
-  it("requires failure details when a scenario is marked failed", () => {
+  it("requires failure details when a scenario is marked failed", async () => {
     const run = getTestRunDetail("run-portal-regression")
     expect(run).toBeDefined()
 
@@ -42,9 +43,10 @@ describe("ExecutionWorkspace", () => {
         target: { value: "The timeout event was not processed." },
       }
     )
-    fireEvent.change(screen.getByLabelText(/Severity/), {
-      target: { value: "HIGH" },
-    })
+    const severityTrigger = screen.getByRole("combobox", { name: /severity/i })
+    await userEvent.click(severityTrigger)
+    const highOption = await screen.findByRole("option", { name: "HIGH" })
+    await userEvent.click(highOption)
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
 

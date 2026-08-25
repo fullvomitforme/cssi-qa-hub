@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 
 import { approveReportAction } from "@/app/actions/reports"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,7 @@ export function ReportApprovalPanel({
   fallbackReviewedBy: string
   fallbackApprovedBy: string
 }) {
+  const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -108,7 +110,7 @@ export function ReportApprovalPanel({
                           ? (result.message ?? null)
                           : null
                       )
-                      if (result.status === "success") window.location.reload()
+                      if (result.status === "success") router.refresh()
                     })
                   }
                 >

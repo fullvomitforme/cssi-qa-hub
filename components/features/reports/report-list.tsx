@@ -22,6 +22,13 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -125,28 +132,33 @@ export function ReportList({
             className="pl-8"
           />
         </div>
-        <select
+        <Select
           value={application}
-          onChange={(event) => setApplication(event.target.value)}
-          aria-label="Filter reports by application"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
+          onValueChange={(v) => setApplication(v ?? "ALL")}
         >
-          <option value="ALL">All applications</option>
-          {applications.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
-          value={result}
-          onChange={(event) => setResult(event.target.value)}
-          aria-label="Filter reports by result"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
-        >
-          <option value="ALL">All results</option>
-          <option value="PASS">Pass</option>
-          <option value="CONDITIONAL_PASS">Conditional Pass</option>
-          <option value="FAIL">Fail</option>
-        </select>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue placeholder="All applications" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All applications</SelectItem>
+            {applications.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={result} onValueChange={(v) => setResult(v ?? "ALL")}>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue placeholder="All results" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All results</SelectItem>
+            <SelectItem value="PASS">Pass</SelectItem>
+            <SelectItem value="CONDITIONAL_PASS">Conditional Pass</SelectItem>
+            <SelectItem value="FAIL">Fail</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           className="ml-auto"
           size="sm"
@@ -241,7 +253,7 @@ export function ReportList({
       </div>
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-xl">
           <SheetHeader className="border-b">
             <SheetTitle>Generate QA Report</SheetTitle>
             <SheetDescription>
@@ -250,8 +262,11 @@ export function ReportList({
                 : "Configure a local report entry. Formal preview data remains mock-driven."}
             </SheetDescription>
           </SheetHeader>
-          <form className="flex flex-1 flex-col" onSubmit={generateReport}>
-            <div className="grid flex-1 gap-4 p-4">
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={generateReport}
+          >
+            <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">
               <label className="text-sm font-medium">
                 Application
                 <select

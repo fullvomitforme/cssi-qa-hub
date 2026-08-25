@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   CalendarDaysIcon,
   CheckCircle2Icon,
@@ -135,6 +136,7 @@ export function QABoard({
   const [application, setApplication] = useState("all")
   const [priority, setPriority] = useState("all")
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const filteredItems = useMemo(
     () =>
@@ -163,7 +165,7 @@ export function QABoard({
           setSelected((current) =>
             current?.id === id ? { ...current, status } : current
           )
-          window.location.reload()
+          router.refresh()
         }
       })
       return
@@ -210,7 +212,7 @@ export function QABoard({
         })
         if (result.status === "success") {
           setCreateOpen(false)
-          window.location.reload()
+          router.refresh()
         }
       })
       return
@@ -281,7 +283,7 @@ export function QABoard({
       </div>
 
       <div className="qa-scrollbar overflow-x-auto">
-        <div className="grid min-h-[calc(100vh-10rem)] min-w-[1540px] grid-cols-8 divide-x">
+        <div className="grid min-h-[calc(100vh-10rem)] min-w-max grid-cols-8 divide-x">
           {boardStatuses.map((status) => {
             const columnItems = filteredItems.filter(
               (item) => item.status === status
@@ -327,7 +329,7 @@ export function QABoard({
           if (!open) setSelected(null)
         }}
       >
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-xl">
           {selected ? (
             <>
               <SheetHeader className="border-b pr-12">
@@ -458,14 +460,17 @@ export function QABoard({
       </Sheet>
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-md">
           <SheetHeader className="border-b">
             <SheetTitle>Add work item</SheetTitle>
             <SheetDescription>
               Add a feature-level QA item to the backlog for this local session.
             </SheetDescription>
           </SheetHeader>
-          <form className="flex flex-1 flex-col" onSubmit={createWorkItem}>
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={createWorkItem}
+          >
             <div className="grid flex-1 gap-4 p-4">
               <label className="text-sm font-medium">
                 Title
@@ -478,33 +483,40 @@ export function QABoard({
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm font-medium">
                   Application
-                  <select
-                    name="application"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {[
-                      "Portal",
-                      "CRM",
-                      "Flowra",
-                      "Daily Operation",
-                      "ITQM",
-                      "Intranet",
-                    ].map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                  </select>
+                  <Select name="application">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue placeholder="Select application" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "Portal",
+                        "CRM",
+                        "Flowra",
+                        "Daily Operation",
+                        "ITQM",
+                        "Intranet",
+                      ].map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
                 <label className="text-sm font-medium">
                   Priority
-                  <select
-                    name="priority"
-                    defaultValue="P2"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {(["P0", "P1", "P2", "P3"] as const).map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                  </select>
+                  <Select name="priority" defaultValue="P2">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["P0", "P1", "P2", "P3"] as const).map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
               </div>
               <div className="grid grid-cols-3 gap-3">

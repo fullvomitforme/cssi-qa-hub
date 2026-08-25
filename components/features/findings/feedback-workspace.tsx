@@ -16,6 +16,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -177,7 +184,7 @@ export function FeedbackWorkspace({
 
   return (
     <>
-      <div className="grid min-h-[calc(100vh-9rem)] lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid min-h-[calc(100vh-9rem)] lg:grid-cols-[minmax(0,1fr)_min(420px,50%)]">
         <section className="min-w-0 border-r">
           <div className="flex items-center gap-2 border-b p-3">
             <div className="relative max-w-80 flex-1">
@@ -189,19 +196,19 @@ export function FeedbackWorkspace({
                 className="pl-8"
               />
             </div>
-            <select
-              value={type}
-              onChange={(event) =>
-                setType(event.target.value as FeedbackType | "ALL")
-              }
-              aria-label="Filter feedback by type"
-              className="h-8 rounded-lg border bg-background px-2 text-sm"
-            >
-              <option value="ALL">All types</option>
-              {(Object.keys(icons) as FeedbackType[]).map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+            <Select value={type} onValueChange={(v) => setType(v ?? "ALL")}>
+              <SelectTrigger className="h-8 w-32">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All types</SelectItem>
+                {(Object.keys(icons) as FeedbackType[]).map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               onClick={() => setCreateOpen(true)}
@@ -340,15 +347,18 @@ export function FeedbackWorkspace({
       </div>
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="sm:max-w-lg">
           <SheetHeader className="border-b">
             <SheetTitle>New Feedback</SheetTitle>
             <SheetDescription>
               Record feedback independently from the execution result.
             </SheetDescription>
           </SheetHeader>
-          <form className="flex flex-1 flex-col" onSubmit={createFeedback}>
-            <div className="grid flex-1 gap-4 p-4">
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={createFeedback}
+          >
+            <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">
               <label className="text-sm font-medium">
                 Title
                 <Input name="title" className="mt-1.5" required />
@@ -360,68 +370,82 @@ export function FeedbackWorkspace({
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm font-medium">
                   Type
-                  <select
-                    name="type"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {(Object.keys(icons) as FeedbackType[]).map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
+                  <Select name="type">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(icons) as FeedbackType[]).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
                 <label className="text-sm font-medium">
                   Severity
-                  <select
-                    name="severity"
-                    defaultValue="LOW"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(
-                      (item) => (
-                        <option key={item}>{item}</option>
-                      )
-                    )}
-                  </select>
+                  <Select name="severity" defaultValue="LOW">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(
+                        (item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm font-medium">
                   Application
-                  <select
-                    name="application"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {[
-                      "Portal",
-                      "CRM",
-                      "Flowra",
-                      "Daily Operation",
-                      "ITQM",
-                      "Intranet",
-                    ].map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
+                  <Select name="application">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue placeholder="Select application" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "Portal",
+                        "CRM",
+                        "Flowra",
+                        "Daily Operation",
+                        "ITQM",
+                        "Intranet",
+                      ].map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
                 <label className="text-sm font-medium">
                   Execution result
-                  <select
-                    name="executionStatus"
-                    defaultValue="PASS"
-                    className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
-                  >
-                    {(
-                      [
-                        "PASS",
-                        "FAIL",
-                        "BLOCKED",
-                        "SKIPPED",
-                        "NOT_TESTED",
-                      ] as const
-                    ).map((item) => (
-                      <option key={item}>{item.replace("_", " ")}</option>
-                    ))}
-                  </select>
+                  <Select name="executionStatus" defaultValue="PASS">
+                    <SelectTrigger className="mt-1.5 h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(
+                        [
+                          "PASS",
+                          "FAIL",
+                          "BLOCKED",
+                          "SKIPPED",
+                          "NOT_TESTED",
+                        ] as const
+                      ).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item.replace("_", " ")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
               </div>
               <label className="text-sm font-medium">

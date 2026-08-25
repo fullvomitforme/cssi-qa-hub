@@ -17,6 +17,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type {
   ScenarioFormValues,
   ScenarioHierarchy,
@@ -129,10 +136,10 @@ function ScenarioFormSheetInner({
 
   useEffect(() => {
     if (state.status !== "success" || !state.scenarioId) return
-
     router.refresh()
     onSuccess?.(state.scenarioId)
-  }, [onSuccess, router, state.scenarioId, state.status])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.scenarioId, state.status])
 
   function setField<K extends keyof ScenarioFormValues>(
     field: K,
@@ -202,12 +209,12 @@ function ScenarioFormSheetInner({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl">
+      <SheetContent className="sm:max-w-xl">
         <SheetHeader className="border-b">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <form action={formAction} className="flex flex-1 flex-col">
+        <form action={formAction} className="flex min-h-0 flex-1 flex-col">
           {scenarioId ? (
             <input type="hidden" name="scenarioId" value={scenarioId} />
           ) : null}
@@ -229,14 +236,11 @@ function ScenarioFormSheetInner({
             value={JSON.stringify(values.tags)}
           />
 
-          <div className="qa-scrollbar grid flex-1 gap-4 overflow-y-auto p-4">
+          <div className="qa-scrollbar grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">
             {state.status === "error" && state.message ? (
-              <p
-                role="alert"
-                className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-              >
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 {state.message}
-              </p>
+              </div>
             ) : null}
 
             <label className="text-sm font-medium">
@@ -288,25 +292,29 @@ function ScenarioFormSheetInner({
             <div className="grid grid-cols-2 gap-3">
               <label className="text-sm font-medium">
                 Application
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={values.applicationId}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setValues((current) => ({
                       ...current,
-                      applicationId: event.target.value,
+                      applicationId: value ?? "",
                       moduleId: "",
                       featureId: "",
                     }))
                   }
                 >
-                  <option value="">Select application</option>
-                  {hierarchy.applications.map((application) => (
-                    <option key={application.id} value={application.id}>
-                      {application.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select application" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select application</SelectItem>
+                    {hierarchy.applications.map((application) => (
+                      <SelectItem key={application.id} value={application.id}>
+                        {application.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.applicationId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.applicationId[0]}
@@ -316,48 +324,56 @@ function ScenarioFormSheetInner({
 
               <label className="text-sm font-medium">
                 Priority
-                <select
+                <Select
                   name="priority"
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
                   value={values.priority}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setField(
                       "priority",
-                      event.target.value as ScenarioFormValues["priority"]
+                      value as ScenarioFormValues["priority"]
                     )
                   }
                 >
-                  {(["P0", "P1", "P2", "P3"] as const).map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["P0", "P1", "P2", "P3"] as const).map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        {priority}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </label>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="text-sm font-medium">
                 Module
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={selectedModuleId}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setValues((current) => ({
                       ...current,
-                      moduleId: event.target.value,
+                      moduleId: value ?? "",
                       featureId: "",
                     }))
                   }
                   disabled={!values.applicationId}
                 >
-                  <option value="">Select module</option>
-                  {moduleOptions.map((module) => (
-                    <option key={module.id} value={module.id}>
-                      {module.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select module</SelectItem>
+                    {moduleOptions.map((module) => (
+                      <SelectItem key={module.id} value={module.id}>
+                        {module.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.moduleId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.moduleId[0]}
@@ -367,21 +383,23 @@ function ScenarioFormSheetInner({
 
               <label className="text-sm font-medium">
                 Feature
-                <select
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
+                <Select
                   value={selectedFeatureId}
-                  onChange={(event) =>
-                    setField("featureId", event.target.value)
-                  }
+                  onValueChange={(value) => setField("featureId", value ?? "")}
                   disabled={!values.moduleId}
                 >
-                  <option value="">Select feature</option>
-                  {featureOptions.map((feature) => (
-                    <option key={feature.id} value={feature.id}>
-                      {feature.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue placeholder="Select feature" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Select feature</SelectItem>
+                    {featureOptions.map((feature) => (
+                      <SelectItem key={feature.id} value={feature.id}>
+                        {feature.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldErrors.featureId ? (
                   <span className="mt-1 block text-xs text-destructive">
                     {fieldErrors.featureId[0]}
@@ -393,23 +411,24 @@ function ScenarioFormSheetInner({
             <div className="grid grid-cols-2 gap-3">
               <label className="text-sm font-medium">
                 Test type
-                <select
+                <Select
                   name="type"
-                  className="mt-1.5 h-8 w-full rounded-lg border bg-background px-2"
                   value={values.type}
-                  onChange={(event) =>
-                    setField(
-                      "type",
-                      event.target.value as ScenarioFormValues["type"]
-                    )
+                  onValueChange={(value) =>
+                    setField("type", value as ScenarioFormValues["type"])
                   }
                 >
-                  {testTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type.replaceAll("_", " ")}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5 h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {testTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.replaceAll("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </label>
             </div>
 
@@ -465,6 +484,7 @@ function ScenarioFormSheetInner({
                         size="icon-sm"
                         onClick={() => moveStep(index, -1)}
                         disabled={index === 0}
+                        aria-label={`Move step ${index + 1} up`}
                       >
                         <ArrowUpIcon />
                       </Button>
@@ -474,6 +494,7 @@ function ScenarioFormSheetInner({
                         size="icon-sm"
                         onClick={() => moveStep(index, 1)}
                         disabled={index === values.steps.length - 1}
+                        aria-label={`Move step ${index + 1} down`}
                       >
                         <ArrowDownIcon />
                       </Button>
@@ -483,6 +504,7 @@ function ScenarioFormSheetInner({
                         size="icon-sm"
                         onClick={() => removeStep(index)}
                         disabled={values.steps.length === 1}
+                        aria-label={`Remove step ${index + 1}`}
                       >
                         <XIcon />
                       </Button>

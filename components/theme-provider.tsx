@@ -47,6 +47,11 @@ function ThemeHotkey() {
         return
       }
 
+      // Guard against undefined key (Safari edge case)
+      if (!event.key) {
+        return
+      }
+
       if (event.key.toLowerCase() !== "d") {
         return
       }

@@ -16,6 +16,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -84,56 +91,67 @@ export function FailureList({ items }: { items?: FailureListItem[] }) {
             className="pl-8"
           />
         </div>
-        <select
+        <Select
           value={application}
-          onChange={(event) => setApplication(event.target.value)}
-          aria-label="Filter failures by application"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
+          onValueChange={(v) => setApplication(v ?? "ALL")}
         >
-          <option value="ALL">All applications</option>
-          {Array.from(
-            new Set(failureItems.map((item) => item.application))
-          ).map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
-          value={severity}
-          onChange={(event) => setSeverity(event.target.value)}
-          aria-label="Filter failures by severity"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
-        >
-          <option value="ALL">All severities</option>
-          {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          aria-label="Filter failures by status"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
-        >
-          <option value="ALL">All statuses</option>
-          {Array.from(new Set(failureItems.map((item) => item.status))).map(
-            (item) => (
-              <option key={item}>{item.replaceAll("_", " ")}</option>
-            )
-          )}
-        </select>
-        <select
-          value={retest}
-          onChange={(event) => setRetest(event.target.value)}
-          aria-label="Filter failures by retest status"
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
-        >
-          <option value="ALL">All retest states</option>
-          {Array.from(
-            new Set(failureItems.map((item) => item.retestStatus))
-          ).map((item) => (
-            <option key={item}>{item.replaceAll("_", " ")}</option>
-          ))}
-        </select>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue placeholder="All applications" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All applications</SelectItem>
+            {Array.from(
+              new Set(failureItems.map((item) => item.application))
+            ).map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={severity} onValueChange={(v) => setSeverity(v ?? "ALL")}>
+          <SelectTrigger className="h-8 w-32">
+            <SelectValue placeholder="All severities" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All severities</SelectItem>
+            {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={status} onValueChange={(v) => setStatus(v ?? "ALL")}>
+          <SelectTrigger className="h-8 w-32">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All statuses</SelectItem>
+            {Array.from(new Set(failureItems.map((item) => item.status))).map(
+              (item) => (
+                <SelectItem key={item} value={item}>
+                  {item.replaceAll("_", " ")}
+                </SelectItem>
+              )
+            )}
+          </SelectContent>
+        </Select>
+        <Select value={retest} onValueChange={(v) => setRetest(v ?? "ALL")}>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue placeholder="All retest states" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All retest states</SelectItem>
+            {Array.from(
+              new Set(failureItems.map((item) => item.retestStatus))
+            ).map((item) => (
+              <SelectItem key={item} value={item}>
+                {item.replaceAll("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span className="ml-auto text-xs text-muted-foreground">
           {filteredFailures.length} findings
         </span>
@@ -219,7 +237,7 @@ export function FailureList({ items }: { items?: FailureListItem[] }) {
           if (!open) setSelected(null)
         }}
       >
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-xl">
           {selected ? (
             <>
               <SheetHeader className="border-b pr-12">
