@@ -1,6 +1,55 @@
-/* Synced from ../docs/styles/design-system/tokens.css; edit the source first. */
+/* KB Valbury Sekuritas — QA Hub */
 @import "./tokens.css";
 @import "shadcn/tailwind.css";
+
+/* ── KB Font Faces ────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "KBFG Text";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/KBFGText-Light.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "KBFG Text";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/KBFGText-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "KBFG Display";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/KBFGDisplay-Light.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "KBFG Display";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/KBFGDisplay-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "KBFG Display";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/KBFGDisplay-MediumItalic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "KB Bold";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/KB_BoldA.woff2") format("woff2");
+}
 
 @layer base {
   * {

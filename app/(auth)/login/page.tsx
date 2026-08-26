@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
-import { ClipboardCheckIcon, LockKeyholeIcon } from "lucide-react"
+import Image from "next/image"
+import { LockKeyholeIcon } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import { loginAction } from "@/app/actions/auth"
@@ -33,8 +34,15 @@ export default async function LoginPage({
     <main className="grid min-h-svh place-items-center bg-muted p-4">
       <Card className="w-full max-w-sm rounded-lg shadow-sm">
         <CardHeader>
-          <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
-            <ClipboardCheckIcon aria-hidden="true" />
+          <div className="mb-2">
+            <Image
+              src="/kb_valbury_logo.png"
+              alt="KB Valbury"
+              width={36}
+              height={36}
+              className="h-9 w-auto"
+              priority
+            />
           </div>
           <CardTitle>Sign in to QA Hub</CardTitle>
           <CardDescription>

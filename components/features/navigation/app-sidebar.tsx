@@ -1,8 +1,9 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ClipboardCheckIcon, LogOutIcon } from "lucide-react"
+import { LogOutIcon } from "lucide-react"
 
 import { logoutAction } from "@/app/actions/auth"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -45,11 +46,16 @@ export function AppSidebar({ profile }: { profile: CurrentProfile }) {
             <SidebarMenuButton
               size="lg"
               render={<Link href="/overview" />}
-              tooltip="QA Hub"
+              tooltip="KB Valbury QA Hub"
             >
-              <span className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background">
-                <ClipboardCheckIcon aria-hidden="true" />
-              </span>
+              <Image
+                src="/kb_valbury_logo.png"
+                alt="KB Valbury"
+                width={28}
+                height={28}
+                className="h-7 w-auto"
+                priority
+              />
               <span className="font-semibold">QA Hub</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
