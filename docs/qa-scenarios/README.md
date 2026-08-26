@@ -36,6 +36,7 @@ All scenarios follow these principles:
 ### Structure
 
 Each scenario contains:
+
 - **ID** — Unique stable identifier
 - **Scenario title** — One-line description of what is being tested
 - **Purpose** — Why this test matters
@@ -47,21 +48,23 @@ Each scenario contains:
 
 ## Status of Each Application
 
-| Application | Status | Modules | Features | Scenarios |
-| ----------- | :----: | ------: | -------: | --------: |
-| Portal | DRAFT | 9 | 40+ | 60 |
-| CRM | DRAFT | 9 | 50+ | 57 |
-| Flowra | DRAFT | 12 | 60+ | 73 |
-| Daily Operation | DRAFT | 5 | 30+ | 36 |
-| ITQM | DRAFT | 8 | 45+ | 54 |
-| Intranet | DRAFT | 6 | 35+ | 50 |
-| **Total** | | **49** | **260+** | **330** |
+| Application     |  Status  | Modules | Features | Scenarios | DB Status   |
+| --------------- | :------: | ------: | -------: | --------: | ----------- |
+| Portal          | REVIEWED |      10 |       13 |        60 | ✅ Imported |
+| CRM             | REVIEWED |       9 |        9 |        57 | ✅ Imported |
+| Flowra          | REVIEWED |      12 |       12 |        73 | ✅ Imported |
+| Daily Operation | REVIEWED |       5 |        5 |        36 | ✅ Imported |
+| ITQM            | REVIEWED |       8 |        8 |        54 | ✅ Imported |
+| Intranet        | REVIEWED |       8 |        8 |        50 | ✅ Imported |
+| **Total**       |          |  **52** |   **55** |   **330** |             |
 
 ### Status Definitions
 
 - **DRAFT**: Generated/initial catalog, still requires QA review against live system.
 - **REVIEWED**: Validated against actual product behavior, ready for QA execution.
-- **READY FOR IMPORT**: Taxonomy and scenario quality approved for QA Hub master data.
+- **IMPORTED**: Taxonomy approved and imported into QA Hub database via `scripts/import-qa-catalog.ts`.
+
+See [IMPORT.md](./IMPORT.md) for import details and re-import workflow.
 
 ## Implementation Status Legend
 
@@ -74,21 +77,21 @@ Each catalog includes an Implementation Status section with the following meanin
 
 ## Terminology
 
-| Term | Definition |
-| ---- | ----------- |
-| **OA** | Opening Account — the primary workflow in Flowra |
-| **PIC** | Person In Charge — the user assigned to complete a development task in ITQM |
-| **SSO** | Single Sign-On — Portal authenticates users once; sibling apps trust the Portal session |
-| **RBAC** | Role-Based Access Control — permissions are assigned to roles, roles to users |
-| **Module** | A logical grouping of pages/features within an application (e.g., "Accounts", "Contacts") |
-| **Action** | A permission type within a module (READ, CREATE, UPDATE, DELETE, APPROVE, REJECT) |
-| **Draft** | Unsaved local form data; may be lost on page refresh depending on the application |
-| **Autosave** | Automatic periodic saving of form data |
-| **Happy Path** | The normal, expected flow where everything works correctly |
-| **Negative** | Testing error conditions, invalid input, or failure scenarios |
-| **Edge Case** | Unusual but possible scenarios that may reveal hidden bugs |
-| **Integration** | Testing behavior that spans multiple applications or systems |
-| **Permission** | Testing access control ��� who can see what and who can do what |
+| Term            | Definition                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| **OA**          | Opening Account — the primary workflow in Flowra                                          |
+| **PIC**         | Person In Charge — the user assigned to complete a development task in ITQM               |
+| **SSO**         | Single Sign-On — Portal authenticates users once; sibling apps trust the Portal session   |
+| **RBAC**        | Role-Based Access Control — permissions are assigned to roles, roles to users             |
+| **Module**      | A logical grouping of pages/features within an application (e.g., "Accounts", "Contacts") |
+| **Action**      | A permission type within a module (READ, CREATE, UPDATE, DELETE, APPROVE, REJECT)         |
+| **Draft**       | Unsaved local form data; may be lost on page refresh depending on the application         |
+| **Autosave**    | Automatic periodic saving of form data                                                    |
+| **Happy Path**  | The normal, expected flow where everything works correctly                                |
+| **Negative**    | Testing error conditions, invalid input, or failure scenarios                             |
+| **Edge Case**   | Unusual but possible scenarios that may reveal hidden bugs                                |
+| **Integration** | Testing behavior that spans multiple applications or systems                              |
+| **Permission**  | Testing access control ��� who can see what and who can do what                           |
 
 ---
 
