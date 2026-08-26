@@ -66,6 +66,8 @@ Each scenario contains:
 
 See [IMPORT.md](./IMPORT.md) for import details and re-import workflow.
 
+See [TEST-PLANS.md](./TEST-PLANS.md) for canonical smoke and regression test plans built from this catalog.
+
 ## Implementation Status Legend
 
 Each catalog includes an Implementation Status section with the following meanings:
