@@ -154,7 +154,6 @@ async function suspendTestUsers(): Promise<Array<{ id: string; email: string }>>
       
       // Suspend the user
       const { error } = await supabase.auth.admin.updateUserById(userId, {
-        is_sso_user: false,
         ban_duration: '24h', // Suspend for 24 hours (can be adjusted)
       });
       
